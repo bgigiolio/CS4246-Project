@@ -19,5 +19,7 @@ vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
 vi.run()
 print(vi.policy) # result is (0, 0, 0)
 
+print("test of my branch")
+
 
 
