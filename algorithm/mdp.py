@@ -1,7 +1,27 @@
 import mdptoolbox.mdp as mdp
-import mdptoolbox.example
 from pprint import pprint
 import numpy as np
+
+"""
+Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
+"""
+def lat_lon_matrix_to_grid(basemap, nx, ny, metadata=None):
+    lat_lon_grid = basemap.makegrid(nx, ny)
+    len_x = len(lat_lon_grid[0][0])
+    len_y = len(lat_lon_grid[0])
+
+    xy_to_lat_lon_map = {}
+    grid = [[0 for x in range(len_x)] for x in range(len_y)]
+    for i in range(len_y):
+        for j in range(len_x):
+            xy_to_lat_lon_map[(j, i)] = (lat_lon_grid[0][i][j], lat_lon_grid[1][i][j])
+            xpt, ypt = basemap(lat_lon_grid[0][i][j], lat_lon_grid[1][i][j])
+            if (basemap.is_land(xpt, ypt)):
+                grid[i][j] = '-'
+            else:
+                grid[i][j] = '0'
+    
+    return (grid, xy_to_lat_lon_map)
 
 """
 :param _grid: denote obstacles with -, otherwise denote with reward
@@ -56,16 +76,17 @@ def generate_P_R_matrix(grid, actions):
     return (np.asarray(P), np.transpose(np.asarray(R)))
                 
 
-grid = [[0.1,0.2],[0.3,0.4]]
-actions = [((0,-1), [[0,0.8,0],[0.1,0,0.1],[0,0,0]]), ((1,0), [[0,0.1,0],[0,0,0.8],[0,0.1,0]])]
-P,R = generate_P_R_matrix(grid, actions)
-pprint(P)
-pprint(R)
+# grid = [[0.1,0.2],[0.3,0.4]]
+# actions = [((0,-1), [[0,0.8,0],[0.1,0,0.1],[0,0,0]]), ((1,0), [[0,0.1,0],[0,0,0.8],[0,0.1,0]])]
+# P,R = generate_P_R_matrix(grid, actions)
+# pprint(P)
+# pprint(R)
 
 # P, R = mdptoolbox.example.forest(S=4)
-print(P.shape)
-print(R.shape)
-vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
-vi.run()
-print(vi.policy)
+# print(P.shape)
+# print(R.shape)
+# vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
+# vi.run()
+# print(vi.policy)
 # print(vi.iter)
+
