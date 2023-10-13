@@ -2,12 +2,8 @@ from mpl_toolkits.basemap import Basemap
 import pandas as pd
 import math
 
-riskiest = -100
-def riskCalc(location: tuple[float, float], riskFunc: callable = None) -> float:
-    if riskFunc == None:
-        return 1
-    else:
-        return riskFunc()
+def riskCalc(lon: float, lat: float) -> float:
+    return 1
     
 def generateFrame(lat: tuple[float, float] = (-90, 90), lon: tuple[float, float] = (-180, 180), scale: float = .5, riskFunc: callable = None) -> pd.DataFrame:
     """
@@ -33,7 +29,7 @@ def generateFrame(lat: tuple[float, float] = (-90, 90), lon: tuple[float, float]
             lattitude = t * scale
             longitude = n * scale
             if not map.is_land(longitude, lattitude):
-                df.loc[longitude, lattitude] = 1
+                df.loc[longitude, lattitude] = riskFunc(n, t)
             else:
                 df.loc[longitude, lattitude] = "-"
     return df
@@ -83,7 +79,7 @@ def main():
     lattitude = (-12.5, 19.5)
     longitude = (91, 155)
     scale = .5
-    generateFrame(lattitude, longitude, scale).to_csv(f"{lattitude}_{longitude}_{scale}.csv")
+    generateFrame(lattitude, longitude, scale, riskCalc).to_csv(f"riskMaps/{lattitude}_{longitude}_{scale}.csv")
 
 if __name__ == "__main__":
     main()
