@@ -76,17 +76,13 @@ def generate_P_R_matrix(grid, actions):
     return (np.asarray(P), np.transpose(np.asarray(R)))
                 
 
-# grid = [[0.1,0.2],[0.3,0.4]]
-# actions = [((0,-1), [[0,0.8,0],[0.1,0,0.1],[0,0,0]]), ((1,0), [[0,0.1,0],[0,0,0.8],[0,0.1,0]])]
-# P,R = generate_P_R_matrix(grid, actions)
-# pprint(P)
-# pprint(R)
+grid = [[0.1,0.2],[0.3,0.4]]
+actions = [((0,-1), [[0,0.8,0],[0.1,0,0.1],[0,0,0]]), ((1,0), [[0,0.1,0],[0,0,0.8],[0,0.1,0]])]
+P,R = generate_P_R_matrix(grid, actions)
 
-# P, R = mdptoolbox.example.forest(S=4)
-# print(P.shape)
-# print(R.shape)
-# vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
-# vi.run()
-# print(vi.policy)
-# print(vi.iter)
+print(P.shape)
+print(R.shape)
+vi = mdp.ValueIteration(P, R, 0.9)
+vi.run()
+print(vi.policy)
 
