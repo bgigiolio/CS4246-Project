@@ -38,7 +38,6 @@ def loadFrame(filePath: str) -> pd.DataFrame:
 
 
 def main():
-    print("hih")
     lattitude = (-12.5, 19.5)
     longitude = (91, 155)
     scale = .5
