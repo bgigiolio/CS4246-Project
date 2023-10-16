@@ -7,7 +7,6 @@ import random
 
 #TODO - relate the danger data to the amount of ships through the area
 #TODO - diagonal movement for the boats?
-#TODO - ints instead of floats? liley better to do when generating the mdp
 
 def euclidean(t1:tuple, t2:tuple):
     return math.dist(t1,t2)
@@ -90,7 +89,7 @@ class Dataset:
                     state_attributes={}
                     states[(round(self.min_lon+i_lon*distance,4), round(self.min_lat+i_lat*distance,4))]=state_attributes
                     neighbours=[]
-                    for k in [(0,(1,0)), (1,(0,1)), (2,(-1,0)), (3,(0,-1))]:
+                    for k in [(0,(1,0)), (1,(0,1)), (2,(-1,0)), (3,(0,-1))]: 
                         if self.min_lon<=lon+k[1][0]*distance<self.min_lon+i_lon_max*distance and \
                             self.min_lat<=lat+k[1][1]*distance<self.min_lat+i_lat_max*distance:
                             lon_m, lat_m=m(np.array(lon+k[1][0]*distance),np.array(lat+k[1][1]*distance))
