@@ -1,5 +1,5 @@
-import mdptoolbox.mdp as mdp
-#import mdp_toolbox_custom as mdp
+#import mdptoolbox.mdp as mdp
+import mdp_toolbox_custom as mdp
 from pprint import pprint
 import numpy as np
 
@@ -76,15 +76,45 @@ def generate_P_R_matrix(grid, actions):
         
     return (np.asarray(P), np.transpose(np.asarray(R)))
                 
+def state_dict_to_P(states, actions):
+    A_count = len(actions)
+    P = np.zeros((A_count, len(states)))
 
-grid = np.array([[0.1,0.2],[0.3,0.4]])
-actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
-P,R = generate_P_R_matrix(grid, actions)
+    state_counter = 0
+    coord_to_state_map = {}
+    for coord in states:
+        coord_to_state_map[coord] = state_counter
+        state_counter += 1
+    
+    for coord in states:
+        curr_state = coord_to_state_map[coord]
+        neighbour_lst = states[coord]['neighbours']
+        action_set = set(range(A_count))
+        for neighbour in neighbour_lst:
+            action = neighbour[1]
+            neighbour_state = coord_to_state_map[neighbour[0]]
+            P[action][curr_state] = neighbour_state
+            action_set.remove(action)
 
-#P = np.array([[2, 3, 0, 1], [1, 0, 3, 2]])
-#R = np.array([[0.3, 0.2], [0.4, 0.1], [0.1, 0.4], [0.2, 0.3]])
+        for remaining_action in action_set:
+            P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
+    
+    print(states)
+    print(coord_to_state_map)
+    return P
 
-print(P)
-vi = mdp.FiniteHorizon(P, R, 0.95, 5)
-vi.run()
-print(vi.policy)
+def main():
+    grid = np.array([[0.1,0.2],[0.3,0.4]])
+    actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
+    P,R = generate_P_R_matrix(grid, actions)
+
+    P = np.array([[2, 3, 0, 1], [1, 0, 3, 2]])
+    R = np.array([[0.3, 0.2], [0.4, 0.1], [0.1, 0.4], [0.2, 0.3]])
+
+    print(P)
+    vi = mdp.FiniteHorizon(P, R, 0.95, 5)
+    vi.run()
+    print(vi.policy)
+
+if __name__=='__main__':
+    main()
