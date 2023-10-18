@@ -1,4 +1,5 @@
 import mdptoolbox.mdp as mdp
+#import mdp_toolbox_custom as mdp
 from pprint import pprint
 import numpy as np
 
@@ -76,13 +77,14 @@ def generate_P_R_matrix(grid, actions):
     return (np.asarray(P), np.transpose(np.asarray(R)))
                 
 
-grid = [[0.1,0.2],[0.3,0.4]]
-actions = [((0,-1), [[0,0.8,0],[0.1,0,0.1],[0,0,0]]), ((1,0), [[0,0.1,0],[0,0,0.8],[0,0.1,0]])]
+grid = np.array([[0.1,0.2],[0.3,0.4]])
+actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
 P,R = generate_P_R_matrix(grid, actions)
 
-print(P.shape)
-print(R.shape)
-vi = mdp.ValueIteration(P, R, 0.9)
+#P = np.array([[2, 3, 0, 1], [1, 0, 3, 2]])
+#R = np.array([[0.3, 0.2], [0.4, 0.1], [0.1, 0.4], [0.2, 0.3]])
+
+print(P)
+vi = mdp.FiniteHorizon(P, R, 0.95, 5)
 vi.run()
 print(vi.policy)
-
