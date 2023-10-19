@@ -15,7 +15,7 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
         # print((round(lon, 4), round(lat, 4))
         return "-"
     
-def generateFrame(lat: tuple[float, float] = (-90, 90), lon: tuple[float, float] = (-180, 180), scale: float = .5, riskFunc: callable = riskCalcNone, data: Dataset = None) -> pd.DataFrame:
+def generateFrame(lat: tuple[float, float] = (-90, 90), lon: tuple[float, float] = (-180, 180), scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None) -> pd.DataFrame:
     """
     Generates a dataframe of size |lat[1] - lat[0| x |lon[1] - lon[0]| * 1/scale
     Columns correspond to lattitudes
@@ -32,14 +32,16 @@ def generateFrame(lat: tuple[float, float] = (-90, 90), lon: tuple[float, float]
     lats = []
     lons = []
     for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
-        lats.append(t * scale)
+        # lats.append(t * scale)
+        lats.append(round((t * scale), 4))
     for n in range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)):
-        lons.append(n * scale)
+        # lons.append(n * scale)
+        lons.append(round((n * scale), 4))
     df = pd.DataFrame(index=lons, columns=lats)
     for t in tqdm.tqdm(range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)), desc="test"):
         for n in range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)):
-            lattitude = t * scale
-            longitude = n * scale
+            lattitude = round(t * scale, 4)
+            longitude = round(n * scale, 4)
             if not map.is_land(longitude, lattitude):
                 df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data)
             else:
