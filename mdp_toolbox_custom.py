@@ -241,7 +241,7 @@ class MDP(object):
         # _bellmanOperator method. Otherwise the results will be meaningless.
         Q = _np.empty((self.A, self.S))
         for aa in range(self.A):
-            Q[aa] = self.R[aa] + self.discount * self.P[aa].dot(V)
+            Q[aa] = self.R[aa] + self.discount * _np.ones(self.S).dot(V)
         # Get the policy and value, for now it is being returned but...
         # Which way is better?
         # 1. Return, (policy, value)
@@ -1312,7 +1312,7 @@ class ValueIteration(MDP):
         else: # discount == 1
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
-        print("thresh", self.thresh)
+        #print("thresh", self.thresh)
 
     def _boundIter(self, epsilon):
         # Compute a bound for the number of iterations.
@@ -1349,7 +1349,6 @@ class ValueIteration(MDP):
         #     # minimum of the entire array.
         #     h[ss] = PP.min()
 
-        print(h)
         k = 1 - h.sum()
         Vprev = self.V
         null, value = self._bellmanOperator()
@@ -1359,8 +1358,11 @@ class ValueIteration(MDP):
                     span ) / _math.log(self.discount * k))
         #self.V = Vprev
 
-        self.max_iter = int(_math.ceil(max_iter))
-        print("max_iter", self.max_iter)
+        try:
+            self.max_iter = int(_math.ceil(max_iter))
+        except:
+            self.max_iter = 100000
+        #print("max_iter", self.max_iter)
 
     def run(self):
         # Run the value iteration algorithm.
@@ -1375,13 +1377,15 @@ class ValueIteration(MDP):
             Vprev = self.V.copy()
 
             # Bellman Operator: compute policy and value functions
+            #print(self.V)
             self.policy, self.V = self._bellmanOperator()
-            
+            #print(self.policy, self.V)
+
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
             variation = _util.getSpan(self.V - Vprev)
-            print("variation", variation)
+            #print("variation", variation)
 
             if self.verbose:
                 print(("    %s\t\t  %s" % (self.iter, variation)))
@@ -1398,7 +1402,7 @@ class ValueIteration(MDP):
         # store value and policy as tuples
         self.V = tuple(self.V.tolist())
         self.policy = tuple(self.policy.tolist())
-        print(self.policy, self.V, self.P)
+        #print(self.policy, self.V, self.P)
 
         self.time = _time.time() - self.time
 

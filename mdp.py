@@ -75,10 +75,15 @@ def generate_P_R_matrix(grid, actions):
                         R[a][current_state] = state_to_reward[target_state]
         
     return (np.asarray(P), np.transpose(np.asarray(R)))
-                
+
+"""
+P is NOT probability matrix, it is transition matrix
+P[i][j] is the result state of taking aciton i from state j
+"""  
 def state_dict_to_P(states, actions):
     A_count = len(actions)
     P = np.zeros((A_count, len(states)))
+    R = np.zeros((len(states), A_count))
 
     state_counter = 0
     coord_to_state_map = {}
@@ -95,13 +100,14 @@ def state_dict_to_P(states, actions):
             neighbour_state = coord_to_state_map[neighbour[0]]
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
+            R[curr_state][action] = 0 - states[neighbour[0]]['to_goal']
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
+            R[curr_state][remaining_action] = 0 - states[coord]['to_goal']
+            #print(curr_state, remaining_action)
     
-    print(states)
-    print(coord_to_state_map)
-    return P
+    return P, R
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])
