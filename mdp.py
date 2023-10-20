@@ -87,8 +87,10 @@ def state_dict_to_P(states, actions):
 
     state_counter = 0
     coord_to_state_map = {}
+    state_to_coord_map = {}
     for coord in states:
         coord_to_state_map[coord] = state_counter
+        state_to_coord_map[state_counter] = coord
         state_counter += 1
     
     for coord in states:
@@ -107,7 +109,7 @@ def state_dict_to_P(states, actions):
             R[curr_state][remaining_action] = 0 - states[coord]['to_goal']
             #print(curr_state, remaining_action)
     
-    return P, R
+    return P, R, state_to_coord_map
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])

@@ -21,7 +21,7 @@ def main():
 
     ### TRANSLATE DATASET TO MDP ###
     actions = {0: "right", 1: "up", 2: "left", 3: "down"}
-    P, R = state_dict_to_P(dataset.states, actions)
+    P, R, state_to_coord_map = state_dict_to_P(dataset.states, actions)
     print(P, R)
 
     ### SOLVE MDP using MDP toolbox ###
