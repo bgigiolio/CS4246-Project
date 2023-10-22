@@ -28,13 +28,35 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
 #TODO: create way to load from JSON
 #TODO: set up goal and start
 class MDP:
-    @profile
+    """
+    A class to represent an MDP instance
+    
+    Attributes:
+    ____________
+    indexToCoord: dict
+        A dictionary of states where the key is the state's number/index and the value is the coordinate
+        eg: {0: (45, 45)}
+    coordToIndex: dict
+        A dictionary of longitudes, lattitudes, and state numbers/indices
+        Structure: {longitude: {lattitude: index}}
+        eg: {45: {45: 0}}
+        to access: index = MDP.coordToIndex[longitude][lattitude]
+    lon: tuple
+        A tuple of the longitude range covered by the MDP
+        eg: (-180, 180)
+    lat: tuple
+        A tuple of the lattitude range covered by the MDP
+        eg: (-90, 90)
+    scale: float
+        The percision used by the MDP
+    filepath: str
+        The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
+
+
+    """
     def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: dict = None) -> pd.DataFrame:
         """
-        Generates a dataframe of size |lat[1] - lat[0| x |lon[1] - lon[0]| * 1/scale
-        Columns correspond to lattitudes
-        Rows/indices correspond to longitudes
-        The values of each position is decided by riskFunc(lon, lat)
+        Generates 
         """
         # TODO: store json and CSV
         if JSON_file:
@@ -47,13 +69,15 @@ class MDP:
                 self.lon = JSON["lon"]
                 self.scale = JSON["scale"]
                 self.filepath = JSON["filepath"]
-                self.df = JSON["df"]
+                # df = JSON["df"]
                 return
         if os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/risk.csv"):
-            self.df = self.loadFrame(f"riskMaps/{lat}_{lon}_{scale}/risk.csv")
+            df = self.loadFrame(f"riskMaps/{lat}_{lon}_{scale}")
             self.filepath = f"riskMaps/{lat}_{lon}_{scale}"
         else:
-            map = Basemap(resolution="h")
+            # map = Basemap(resolution="h")
+            map = Basemap()
+
             if lat[0] < -90 or lat [1] > 90:
                 raise Exception("Lattitude out of range")
             if lon[0] < -180 or lon[1] > 180:
@@ -67,15 +91,16 @@ class MDP:
                 # lons.append(n * scale)
                 lons.append(round((n * scale), 4))
             df = pd.DataFrame(index=lons, columns=lats)
-            self.indexToCoord = []
+            self.indexToCoord = {}
             self.coordToIndex = {}
             counter = 0
-            for t in tqdm.tqdm(range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)), desc="Generating Frame"):
-                for n in range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)):
+            for n in tqdm.tqdm(range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)), desc="Generating Frame"):
+                longitude = round(n * scale, 4)
+                self.coordToIndex[longitude] = {}
+                for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
                     lattitude = round(t * scale, 4)
-                    longitude = round(n * scale, 4)
-                    self.indexToCoord.append((lattitude, longitude))
-                    self.coordToIndex[(lattitude, longitude)] = counter
+                    self.indexToCoord[counter] = (longitude, lattitude)
+                    self.coordToIndex[longitude][lattitude] = counter
                     counter += 1
                     if not map.is_land(longitude, lattitude):
                         df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data)
@@ -87,9 +112,10 @@ class MDP:
             self.scale = scale
             try:  
                 os.mkdir(f"riskMaps/{self.lat}_{self.lon}_{self.scale}")  
-            except OSError as error:  
-                print(error)   
+            except OSError as error: 
+                print("Folder already exists, skipping...")  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
+            self.generateCSV(df=df)
 
     def toJSON(self):
         j = json.dumps(self, default=lambda o: o.__dict__, 
@@ -97,17 +123,17 @@ class MDP:
         f = open(f"{self.filepath}/JSON.json", "w")
         f.write(j)
 
-    def generateCSV(self):
-        self.df.to_csv(f"{self.filepath}/risk.csv")
+    def generateCSV(self, df: pd.DataFrame):
+        df.to_csv(f"{self.filepath}/risk.csv")
 
-    def loadFrame(self, filePath: str):
+    def loadFrame(self, filePath: str) -> pd.DataFrame:
         """
         Returns a dataframe stored at filePath
         """
-        self.df = pd.read_csv(f"{filePath}/risk.csv")
         self.filepath = filePath
+        return pd.read_csv(f"{filePath}/risk.csv")
 
-    def updateFrame(self,  lats: list[float], lons: list[float], vals: [float]) -> int:
+    def updateFrame(self, df, lats: list[float], lons: list[float], vals: [float]) -> int:
         """
         Updates dataframe df at positions (lons[i], lats[i]) with the value at vals[i]
 
@@ -119,12 +145,12 @@ class MDP:
             return -1
         try:
             for i in range(len(lats)):
-                self.df.loc[lons[i], lats[i]] = vals[i]
+                df.loc[lons[i], lats[i]] = vals[i]
         except:
             return -1
         return 1
 
-    def updateFrameByFunc(self, lats: list[float], lons: list[float], func: callable) -> int:
+    def updateFrameByFunc(self, df, lats: list[float], lons: list[float], func: callable) -> int:
         """
         Updates dataframe df at positions (lons[i], lats[i]) using a function that takes lattitude and 
         longitude as input
@@ -136,13 +162,12 @@ class MDP:
             return -1
         try:
             for i in range(len(lats)):
-                self.df.loc[lons[i], lats[i]] = func(lats[i], lons[i], self.df.loc[lons[i], lats[i]])
+                df.loc[lons[i], lats[i]] = func(lats[i], lons[i], self.df.loc[lons[i], lats[i]])
         except:
             return -1
         return 1
     def archive(self):
         self.toJSON()
-        self.generateCSV()
         self = None
 
 
@@ -155,7 +180,7 @@ def main():
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
     a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset)
-    a.archive
+    a.archive()
 
 if __name__ == "__main__":
     main()
