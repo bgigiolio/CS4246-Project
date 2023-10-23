@@ -1,6 +1,6 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
-from buildRiskTable import generateFrame
+from buildRiskTable import MDP
 from mdp import state_dict_to_P
 from mdp_toolbox_custom import ValueIteration, PolicyIteration
 
@@ -20,12 +20,11 @@ def main():
     dataset=read_dataset("dataset_1")
     print(dataset.states[dataset.get_closest_state(90, 0)]['neighbours']) #this is working as intended
 
-    if False:
+    if True:
         ###CREATE RISK TABLE ###
-        lattitude=(dataset.min_lat, dataset.max_lat) #TODO, move this into the function
-        scale=dataset.scale
-        longitude=(dataset.min_lon, dataset.max_lon)
-        generateFrame(lattitude, longitude, scale, data=dataset).to_csv(f"riskMaps/{lattitude}_{longitude}_{scale}.csv")
+        a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset)
+        b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
+        
 
     if False:
         ### TRANSLATE DATASET TO MDP ###

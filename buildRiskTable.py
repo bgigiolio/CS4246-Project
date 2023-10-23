@@ -54,26 +54,48 @@ class MDP:
 
 
     """
-    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: dict = None) -> pd.DataFrame:
+    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: str = None) -> pd.DataFrame:
         """
-        Generates 
+        Generates a class to represent an MDP instance
+    
+        Attributes:
+        ____________
+        indexToCoord: dict
+            A dictionary of states where the key is the state's number/index and the value is the coordinate
+            eg: {0: (45, 45)}
+        coordToIndex: dict
+            A dictionary of longitudes, lattitudes, and state numbers/indices
+            Structure: {longitude: {lattitude: index}}
+            eg: {45: {45: 0}}
+            to access: index = MDP.coordToIndex[longitude][lattitude]
+        lon: tuple
+            A tuple of the longitude range covered by the MDP
+            eg: (-180, 180)
+        lat: tuple
+            A tuple of the lattitude range covered by the MDP
+            eg: (-90, 90)
+        scale: float
+            The percision used by the MDP
+        filepath: str
+            The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
+ 
         """
-        # TODO: store json and CSV
-        if JSON_file:
-            f = open({JSON_file},) 
+        if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/JSON.json"):
+            if not JSON_file:
+                JSON_file = f"riskMaps/{lat}_{lon}_{scale}/JSON.json"
+            f = open(JSON_file,) 
             JSON = json.load(f)
-            if JSON.has_key("lat") and JSON.has_key("indexToCoord"):
-                self.indexToCoord = JSON["indexToCoord"]
-                self.coordToIndex = JSON["coordToIndex"]
-                self.lat = JSON["lat"]
-                self.lon = JSON["lon"]
-                self.scale = JSON["scale"]
-                self.filepath = JSON["filepath"]
+            self.indexToCoord = JSON["indexToCoord"]
+            self.coordToIndex = JSON["coordToIndex"]
+            self.lat = JSON["lat"]
+            self.lon = JSON["lon"]
+            self.scale = JSON["scale"]
+            self.filepath = JSON["filepath"]
                 # df = JSON["df"]
-                return
-        if os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/risk.csv"):
-            df = self.loadFrame(f"riskMaps/{lat}_{lon}_{scale}")
-            self.filepath = f"riskMaps/{lat}_{lon}_{scale}"
+            return
+        # if os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/risk.csv"):
+        #     df = self.loadFrame(f"riskMaps/{lat}_{lon}_{scale}")
+        #     self.filepath = f"riskMaps/{lat}_{lon}_{scale}"
         else:
             # map = Basemap(resolution="h")
             map = Basemap()
@@ -113,9 +135,10 @@ class MDP:
             try:  
                 os.mkdir(f"riskMaps/{self.lat}_{self.lon}_{self.scale}")  
             except OSError as error: 
-                print("Folder already exists, skipping...")  
+                print(error)  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
             self.generateCSV(df=df)
+            self.toJSON()
 
     def toJSON(self):
         j = json.dumps(self, default=lambda o: o.__dict__, 
@@ -126,14 +149,17 @@ class MDP:
     def generateCSV(self, df: pd.DataFrame):
         df.to_csv(f"{self.filepath}/risk.csv")
 
-    def loadFrame(self, filePath: str) -> pd.DataFrame:
+    def loadFrame(self, filePath: str = None) -> pd.DataFrame:
         """
         Returns a dataframe stored at filePath
         """
-        self.filepath = filePath
+        if filePath: 
+            self.filepath = filePath
+        else:
+            filePath = self.filepath
         return pd.read_csv(f"{filePath}/risk.csv")
 
-    def updateFrame(self, df, lats: list[float], lons: list[float], vals: [float]) -> int:
+    def updateFrame(self, lats: list[float], lons: list[float], vals: [float], df: pd.DataFrame = None) -> int:
         """
         Updates dataframe df at positions (lons[i], lats[i]) with the value at vals[i]
 
@@ -141,6 +167,8 @@ class MDP:
             -Each index of lattitude matches with the same index of longitude and will be set to 
             corresponding value in vals
         """
+        if not df:
+            df = self.loadFrame()
         if not (len(lats) == len(lons) and len(lons) == len(vals)):
             return -1
         try:
@@ -150,7 +178,7 @@ class MDP:
             return -1
         return 1
 
-    def updateFrameByFunc(self, df, lats: list[float], lons: list[float], func: callable) -> int:
+    def updateFrameByFunc(self, lats: list[float], lons: list[float], func: callable, df: pd.DataFrame = None) -> int:
         """
         Updates dataframe df at positions (lons[i], lats[i]) using a function that takes lattitude and 
         longitude as input
@@ -158,6 +186,8 @@ class MDP:
         Requirements: len(lats) = len(lons)
             -Each index of lattitude matches with the same index of longitude
         """
+        if not df:
+            df = self.loadFrame()
         if not len(lats) == len(lons):
             return -1
         try:
@@ -166,9 +196,6 @@ class MDP:
         except:
             return -1
         return 1
-    def archive(self):
-        self.toJSON()
-        self = None
 
 
 def main():
@@ -180,7 +207,9 @@ def main():
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
     a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset)
-    a.archive()
+    a.toJSON()
+    b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
+
 
 if __name__ == "__main__":
     main()
