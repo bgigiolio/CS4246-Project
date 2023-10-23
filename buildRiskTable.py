@@ -7,16 +7,27 @@ import tqdm
 import json
 
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
+    """
+    All lon, lat pairs mapped to 1
+    """
     return 1
 
 def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
+    """
+    Generates riskMap using dataset's 'danger' value
+    """
     if (round(lon, 4), round(lat, 4)) in data.states:
         return data.states[(round(lon, 4), round(lat, 4))]["danger"]
     else:
         # print((round(lon, 4), round(lat, 4))
         return "-"
     
-def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[float, float]):
+def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[float, float] = None):
+    """
+    Generates riskMap using dataset's 'danger' value and distance to goal
+    """
+    if goal is None:
+        return riskCalcNeighbors(lon, lat, data)
     goalReward = 100
     if goal[0] == lon and goal[1] == lat:
         return goalReward
@@ -27,9 +38,6 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
         # print((round(lon, 4), round(lat, 4))
         return "-"
     
-#TODO: restructure to be MDP
-#TODO: create way to load from JSON
-#TODO: set up goal and start
 class MDP:
     """
     A class to represent an MDP instance
@@ -54,34 +62,38 @@ class MDP:
         The percision used by the MDP
     filepath: str
         The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
-
-
     """
-    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: str = None, goal: tuple[float, float] = None) -> pd.DataFrame:
+    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighborsGoal, data: Dataset = None, JSON_file: str = None, goal: tuple[float, float] = None) -> pd.DataFrame:
         """
         Generates a class to represent an MDP instance
-    
-        Attributes:
-        ____________
-        indexToCoord: dict
-            A dictionary of states where the key is the state's number/index and the value is the coordinate
-            eg: {0: (45, 45)}
-        coordToIndex: dict
-            A dictionary of longitudes, lattitudes, and state numbers/indices
-            Structure: {longitude: {lattitude: index}}
-            eg: {45: {45: 0}}
-            to access: index = MDP.coordToIndex[longitude][lattitude]
-        lon: tuple
-            A tuple of the longitude range covered by the MDP
-            eg: (-180, 180)
-        lat: tuple
-            A tuple of the lattitude range covered by the MDP
-            eg: (-90, 90)
+
+        Parameters: 
+        ___________
+        lon: tuple(float, float)
+            The desired longitude range of the MDP
+            Defaults to (-180, 180)
+        lat: tuple(float, float)
+            The desired lattitude range of the MDP
+            Defaults to (-90, 90)
         scale: float
-            The percision used by the MDP
-        filepath: str
-            The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
- 
+            The desired lattitude/longitude percision of the MDP
+            Defaults to .5
+        riskFunc: callable
+            The function for calculating risk. Must be a funciton with the following parameters:
+            func(lon: float, lat: float, data: Dataset)
+            or
+            func(lon: float, lat: float, data: Dataset, goal: tuple[float, float] = None)
+            Defaults to riskCalcNeighbors (riskCalcNeighborsGoal if goal param is filled)
+        data: Dataset
+            The data used by the risk function
+            Defaults to None (Only do this if loading from JSON)
+        JSON_file: str
+            The filepath to a JSON file to load an MDP object from
+            If this param is included, all other params will be ignored and the MDP will be generated from the file given
+            Defaults to None (No file loaded, init carries on normally)
+        goal: tuple(float, float)
+            The goal location for the MDP
+            Defaults to None (MDP will proceed with no goal)
         """
         if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/JSON.json"):
             if not JSON_file:
@@ -129,10 +141,7 @@ class MDP:
                     self.coordToIndex[longitude][lattitude] = counter
                     counter += 1                       
                     if not map.is_land(longitude, lattitude):
-                        if goal is not None:
-                            df.loc[longitude, lattitude] = riskCalcNeighborsGoal(longitude, lattitude, data, goal)
-                        else:
-                            df.loc[longitude, lattitude] = riskCalcNeighbors(longitude, lattitude, data)
+                        df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data, goal)
                         # df.loc[longitude, lattitude] = 1
                     else:
                         df.loc[longitude, lattitude] = "-"
@@ -149,12 +158,18 @@ class MDP:
             self.toJSON()
 
     def toJSON(self):
+        """
+        Dumps a JSON version of the class into the riskMaps folder
+        """
         j = json.dumps(self, default=lambda o: o.__dict__, 
             sort_keys=True, indent=4)
         f = open(f"{self.filepath}/JSON.json", "w")
         f.write(j)
 
     def generateCSV(self, df: pd.DataFrame):
+        """
+        Generates a CSV of the riskMap to the riskMaps folder
+        """
         df.to_csv(f"{self.filepath}/risk.csv")
 
     def loadFrame(self, filePath: str = None) -> pd.DataFrame:
@@ -214,7 +229,7 @@ def main():
     dataset.generate_states(distance=scale) #needs to be done first
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
-    a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset, goal=(18.5, 95))
+    a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
     a.toJSON()
     b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
 
