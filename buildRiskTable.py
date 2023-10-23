@@ -17,9 +17,12 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
         return "-"
     
 def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[float, float]):
+    goalReward = 100
+    if goal[0] == lon and goal[1] == lat:
+        return goalReward
     if (round(lon, 4), round(lat, 4)) in data.states:
         distance = math.sqrt(abs(goal[0] - lon)**2 + abs(goal[1] - lat)**2)
-        return data.states[(round(lon, 4), round(lat, 4))]["danger"] - distance
+        return round(data.states[(round(lon, 4), round(lat, 4))]["danger"] - distance, 4)
     else:
         # print((round(lon, 4), round(lat, 4))
         return "-"
@@ -54,7 +57,7 @@ class MDP:
 
 
     """
-    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: str = None) -> pd.DataFrame:
+    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighbors, data: Dataset = None, JSON_file: str = None, goal: tuple[float, float] = None) -> pd.DataFrame:
         """
         Generates a class to represent an MDP instance
     
@@ -91,6 +94,7 @@ class MDP:
             self.lon = JSON["lon"]
             self.scale = JSON["scale"]
             self.filepath = JSON["filepath"]
+            self.goal = JSON["goal"]
                 # df = JSON["df"]
             return
         # if os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/risk.csv"):
@@ -123,15 +127,19 @@ class MDP:
                     lattitude = round(t * scale, 4)
                     self.indexToCoord[counter] = (longitude, lattitude)
                     self.coordToIndex[longitude][lattitude] = counter
-                    counter += 1
+                    counter += 1                       
                     if not map.is_land(longitude, lattitude):
-                        df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data)
+                        if goal is not None:
+                            df.loc[longitude, lattitude] = riskCalcNeighborsGoal(longitude, lattitude, data, goal)
+                        else:
+                            df.loc[longitude, lattitude] = riskCalcNeighbors(longitude, lattitude, data)
                         # df.loc[longitude, lattitude] = 1
                     else:
                         df.loc[longitude, lattitude] = "-"
             self.lat = lat
             self.lon = lon
             self.scale = scale
+            self.goal = goal
             try:  
                 os.mkdir(f"riskMaps/{self.lat}_{self.lon}_{self.scale}")  
             except OSError as error: 
@@ -206,7 +214,7 @@ def main():
     dataset.generate_states(distance=scale) #needs to be done first
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
-    a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset)
+    a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset, goal=(18.5, 95))
     a.toJSON()
     b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
 
