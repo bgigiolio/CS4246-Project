@@ -5,6 +5,7 @@ import os
 from dataset import Dataset
 import tqdm
 import json
+import decimal
 
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
     """
@@ -37,6 +38,18 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
     else:
         # print((round(lon, 4), round(lat, 4))
         return "-"
+    
+def as_float(obj: dict):
+    """Checks each dict passed to this function if it contains the key "value"
+    Args:
+        obj (dict): The object to decode
+
+    Returns:
+        dict: The new dictionary with changes if necessary
+    """
+    return {round(float(key), 4) : (as_float(value) if isinstance(value, dict) else value) for key, value in obj.items()}
+
+
     
 class MDP:
     """
@@ -101,7 +114,7 @@ class MDP:
             f = open(JSON_file,) 
             JSON = json.load(f)
             self.indexToCoord = JSON["indexToCoord"]
-            self.coordToIndex = JSON["coordToIndex"]
+            self.coordToIndex = as_float(JSON["coordToIndex"])
             self.lat = JSON["lat"]
             self.lon = JSON["lon"]
             self.scale = JSON["scale"]
@@ -221,6 +234,8 @@ class MDP:
         return 1
 
 
+
+
 def main():
     lattitude = (-12.5, 20)
     longitude = (88.5, 100)
@@ -232,6 +247,8 @@ def main():
     a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
     a.toJSON()
     b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
+    utility = b.loadFrame()
+    print(b.coordToIndex)
 
 
 if __name__ == "__main__":
