@@ -5,7 +5,6 @@ import os
 from dataset import Dataset
 import tqdm
 import json
-import decimal
 
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
     """
@@ -20,7 +19,6 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
     if (round(lon, 4), round(lat, 4)) in data.states:
         return data.states[(round(lon, 4), round(lat, 4))]["danger"]
     else:
-        # print((round(lon, 4), round(lat, 4))
         return "-"
     
 def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[float, float] = None):
@@ -36,7 +34,6 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
         distance = math.sqrt(abs(goal[0] - lon)**2 + abs(goal[1] - lat)**2)
         return round(data.states[(round(lon, 4), round(lat, 4))]["danger"] - distance, 4)
     else:
-        # print((round(lon, 4), round(lat, 4))
         return "-"
     
 def as_float(obj: dict):
@@ -120,13 +117,8 @@ class MDP:
             self.scale = JSON["scale"]
             self.filepath = JSON["filepath"]
             self.goal = JSON["goal"]
-                # df = JSON["df"]
             return
-        # if os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/risk.csv"):
-        #     df = self.loadFrame(f"riskMaps/{lat}_{lon}_{scale}")
-        #     self.filepath = f"riskMaps/{lat}_{lon}_{scale}"
         else:
-            # map = Basemap(resolution="h")
             map = Basemap()
 
             if lat[0] < -90 or lat [1] > 90:
@@ -136,10 +128,8 @@ class MDP:
             lats = []
             lons = []
             for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
-                # lats.append(t * scale)
                 lats.append(round((t * scale), 4))
             for n in range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)):
-                # lons.append(n * scale)
                 lons.append(round((n * scale), 4))
             df = pd.DataFrame(index=lons, columns=lats)
             self.indexToCoord = {}
@@ -155,7 +145,6 @@ class MDP:
                     counter += 1                       
                     if not map.is_land(longitude, lattitude):
                         df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data, goal)
-                        # df.loc[longitude, lattitude] = 1
                     else:
                         df.loc[longitude, lattitude] = "-"
             self.lat = lat
@@ -233,9 +222,6 @@ class MDP:
             return -1
         return 1
 
-
-
-
 def main():
     lattitude = (-12.5, 20)
     longitude = (88.5, 100)
@@ -248,8 +234,6 @@ def main():
     a.toJSON()
     b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
     utility = b.loadFrame()
-    print(b.coordToIndex)
-
 
 if __name__ == "__main__":
     main()
