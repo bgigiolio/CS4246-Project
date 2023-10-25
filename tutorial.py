@@ -8,7 +8,7 @@ map = Basemap()
 map.drawcoastlines()
 
 plt.show()
-plt.savefig('figures/test.png')
+plt.savefig('figures/test.png') #don't work
 
 ### built in mdp package - mdptoolbox ###
 
@@ -19,5 +19,9 @@ vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
 vi.run()
 print(vi.policy) # result is (0, 0, 0)
 
+### gym and gymnasium ###
 
-
+import gym
+import gymnasium 
+print(gym)
+print(gymnasium)
