@@ -976,7 +976,7 @@ class QLearning(MDP):
 
         # We don't want to send this to MDP because _computePR should not be
         # run on it, so check that it defines an MDP
-        _util.check(transitions, reward)
+        #_util.check(transitions, reward)
 
         # Store P, S, and A
         self.S, self.A = _computeDimensions(transitions)
@@ -1015,20 +1015,24 @@ class QLearning(MDP):
                 a = _np.random.randint(0, self.A)
 
             # Simulating next state s_new and reward associated to <s,s_new,a>
-            p_s_new = _np.random.random()
-            p = 0
-            s_new = -1
-            while (p < p_s_new) and (s_new < (self.S - 1)):
-                s_new = s_new + 1
-                p = p + self.P[a][s, s_new]
+            # p_s_new = _np.random.random()
+            # p = 0
+            # s_new = -1
+            # while (p < p_s_new) and (s_new < (self.S - 1)):
+            #     s_new = s_new + 1
+            #     p = p + self.P[a][s, s_new]
 
-            try:
-                r = self.R[a][s, s_new]
-            except IndexError:
-                try:
-                    r = self.R[s, a]
-                except IndexError:
-                    r = self.R[s]
+            # try:
+            #     r = self.R[a][s, s_new]
+            # except IndexError:
+            #     try:
+            #         r = self.R[s, a]
+            #     except IndexError:
+            #         r = self.R[s]
+
+            # modification of simulation of next state (just one next state)
+            s_new = int(self.P[a][s])
+            r = self.R[s_new][a]
 
             # Updating the value of Q
             # Decaying update coefficient (1/sqrt(n+2)) can be changed
