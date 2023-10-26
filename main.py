@@ -42,6 +42,7 @@ def main():
         vi = ValueIteration(P, R, 0.95)
         vi.run()
         print(vi.policy)
+        # print(vi.V_avg)
 
     ### SAVE THE RESULTS #TODO
     # Pontus think at least policy, utilities for every step, steps_to_convergence

@@ -62,6 +62,7 @@ import numpy as _np
 import scipy.sparse as _sp
 
 import mdptoolbox.util as _util
+import statistics
 
 _MSG_STOP_MAX_ITER = "Iterating stopped due to maximum number of iterations " \
     "condition."
@@ -1317,6 +1318,7 @@ class ValueIteration(MDP):
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
         #print("thresh", self.thresh)
+        self.V_avg = []
 
     def _boundIter(self, epsilon):
         # Compute a bound for the number of iterations.
@@ -1407,6 +1409,7 @@ class ValueIteration(MDP):
         self.V = tuple(self.V.tolist())
         self.policy = tuple(self.policy.tolist())
         #print(self.policy, self.V, self.P)
+        self.V_avg.append(statistics.mean(self.V))
 
         self.time = _time.time() - self.time
 
