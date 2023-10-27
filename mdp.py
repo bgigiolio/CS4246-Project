@@ -109,7 +109,7 @@ def state_dict_to_P(coord_to_index_map: dict, states: dict, actions: dict, folde
     
     if (not folder_path):
         try:  
-            os.mkdir(folder_path)  
+            os.makedirs(folder_path, exist_ok=True)  
         except OSError as error: 
             print(error) 
 
@@ -117,6 +117,15 @@ def state_dict_to_P(coord_to_index_map: dict, states: dict, actions: dict, folde
             json.dump({"P": P.tolist(), "R": R.tolist()}, f)
 
     return P, R
+
+def save_result(vi: mdp.MDP, folder_path: str):
+    try:  
+        os.makedirs(folder_path, exist_ok=True)  
+    except OSError as error: 
+        print(error)
+    print(vi.V_avg)
+    with open(folder_path + "JSON.json", "w+") as f:
+        json.dump({"policy": vi.policy, "utility": vi.V_avg, "iter": vi.iter}, f)
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])
