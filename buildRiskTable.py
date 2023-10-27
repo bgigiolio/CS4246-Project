@@ -150,10 +150,10 @@ class MDP:
                 self.coordToIndex[longitude] = {}
                 for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
                     latitude = round(t * scale, 4)
-                    self.indexToCoord[counter] = (longitude, latitude)
-                    self.coordToIndex[longitude][latitude] = counter
-                    counter += 1                       
-                    if not map.is_land(longitude, latitude):
+                    if (longitude, latitude) in data.states.keys():
+                        self.indexToCoord[counter] = (longitude, latitude)
+                        self.coordToIndex[longitude][latitude] = counter
+                        counter += 1                       
                         df.loc[longitude, latitude] = riskFunc(longitude, latitude, data, goal)
                     else:
                         df.loc[longitude, latitude] = "-"
