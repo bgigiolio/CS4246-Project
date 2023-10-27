@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
-from mdp import state_dict_to_P
+from mdp import state_dict_to_P, save_result
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 
 def main():
@@ -48,6 +48,7 @@ def main():
 
     ### SAVE THE RESULTS #TODO
     # Pontus think at least policy, utilities for every step, steps_to_convergence
+    save_result(vi, f"results/{longitude}_{lattitude}_{scale}_{vi.label}/")
 
     visualize = False
     if visualize:
