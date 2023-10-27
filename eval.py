@@ -18,6 +18,30 @@ class Evaluator():
     ___________
     scale: float
         This represents the scale of the MDP with degrees of latitude as the unit
+    dates: list[dateTime]
+        This is the list of dates of attacks sampled
+    cargo_cost: int
+        The cost of the container ship if lost
+    cost_per_move: int
+        The added dollar cost of each step taken. Meant to represent fuel costs.
+    epoch_duration: int
+        The amount of days of pirate attacks to be sampled
+    epochs: int
+        Amount of epoch_durations to sample
+    df: Dataframe
+        Dataframe of total pirate attacks
+    
+    Functions:
+    ___________
+    generateAttacks() -> None
+        Generates a list of attacks from [epochs] samples of [epoch_duration] time
+    generatePenalty() -> None
+        Generates a dict of all lattitudes that contain a piracy penalty, and the penalty associated with it
+    regenerate() -> None
+        Runs generateAttacks() and genereatePenalty()
+        Can be used to create a new sample to evaluate on without constructing an entirely new Evaluator
+    evalPolicy(path: tuple, index_to_coord: dict) -> int
+        Takes in a policy and its corresponding index to coord list to evaluate performance on the current sampled piracy attacks.
     """
     def __init__(self, scale: float, epochs: int = 1, epoch_duration: int = 30, cargo_cost: int = 200000000, cost_per_move: int = 2000) -> None:
         #111 km per longitude
