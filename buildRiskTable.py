@@ -46,6 +46,16 @@ def as_float(obj: dict):
     """
     return {round(float(key), 4) : (as_float(value) if isinstance(value, dict) else value) for key, value in obj.items()}
 
+def as_int(obj: dict):
+    """Converts string keys to integers
+    Args:
+        obj (dict): The object to decode
+
+    Returns:
+        dict: The new dictionary with changes if necessary
+    """
+    return {int(key) : tuple(value) for key, value in obj.items()}
+
 
     
 class MDP:
@@ -110,7 +120,7 @@ class MDP:
                 JSON_file = f"riskMaps/{lat}_{lon}_{scale}/JSON.json"
             f = open(JSON_file,) 
             JSON = json.load(f)
-            self.indexToCoord = JSON["indexToCoord"]
+            self.indexToCoord = as_int(JSON["indexToCoord"])
             self.coordToIndex = as_float(JSON["coordToIndex"])
             self.lat = JSON["lat"]
             self.lon = JSON["lon"]

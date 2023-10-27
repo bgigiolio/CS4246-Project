@@ -3,17 +3,23 @@ from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from mdp import state_dict_to_P, save_result
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
+from eval import Evaluator
 
 def main():
     ### CREATE DATASET ###
     if True:
-        ### SEA ###
+        # ### SEA ###
         # latitude = (-12.5, 31.5)
-        # longitude = (88.5, 152.9)
+        # longitude = (88.5, 153)
+        # scale = .5
+
+        # ### DEMO ###
         scale = 1
         longitude = (86, 90)
         latitude = (-12, -8)
-        dataset=Dataset(86, 90, -12, -8)
+
+        
+        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1])
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
         dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
@@ -48,7 +54,14 @@ def main():
 
     ### SAVE THE RESULTS #TODO
     # Pontus think at least policy, utilities for every step, steps_to_convergence
-    save_result(vi, f"results/{longitude}_{lattitude}_{scale}_{vi.label}/")
+    save_result(vi, f"results/{longitude}_{latitude}_{scale}_{vi.label}/")
+
+    ### EVALUATE POLICY ###
+    if True:
+        evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
+        print("Path score: ", evaluator.evalPolicy(vi.policy, a.indexToCoord))
+
+
 
     visualize = False
     if visualize:
