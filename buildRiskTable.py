@@ -58,15 +58,15 @@ class MDP:
         A dictionary of states where the key is the state's number/index and the value is the coordinate
         eg: {0: (45, 45)}
     coordToIndex: dict
-        A dictionary of longitudes, lattitudes, and state numbers/indices
-        Structure: {longitude: {lattitude: index}}
+        A dictionary of longitudes, latitudes, and state numbers/indices
+        Structure: {longitude: {latitude: index}}
         eg: {45: {45: 0}}
-        to access: index = MDP.coordToIndex[longitude][lattitude]
+        to access: index = MDP.coordToIndex[longitude][latitude]
     lon: tuple
         A tuple of the longitude range covered by the MDP
         eg: (-180, 180)
     lat: tuple
-        A tuple of the lattitude range covered by the MDP
+        A tuple of the latitude range covered by the MDP
         eg: (-90, 90)
     scale: float
         The percision used by the MDP
@@ -83,10 +83,10 @@ class MDP:
             The desired longitude range of the MDP
             Defaults to (-180, 180)
         lat: tuple(float, float)
-            The desired lattitude range of the MDP
+            The desired latitude range of the MDP
             Defaults to (-90, 90)
         scale: float
-            The desired lattitude/longitude percision of the MDP
+            The desired latitude/longitude percision of the MDP
             Defaults to .5
         riskFunc: callable
             The function for calculating risk. Must be a funciton with the following parameters:
@@ -122,7 +122,7 @@ class MDP:
             map = Basemap()
 
             if lat[0] < -90 or lat [1] > 90:
-                raise Exception("Lattitude out of range")
+                raise Exception("latitude out of range")
             if lon[0] < -180 or lon[1] > 180:
                 raise Exception("Longitude out of range")
             lats = []
@@ -139,14 +139,14 @@ class MDP:
                 longitude = round(n * scale, 4)
                 self.coordToIndex[longitude] = {}
                 for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
-                    lattitude = round(t * scale, 4)
-                    self.indexToCoord[counter] = (longitude, lattitude)
-                    self.coordToIndex[longitude][lattitude] = counter
+                    latitude = round(t * scale, 4)
+                    self.indexToCoord[counter] = (longitude, latitude)
+                    self.coordToIndex[longitude][latitude] = counter
                     counter += 1                       
-                    if not map.is_land(longitude, lattitude):
-                        df.loc[longitude, lattitude] = riskFunc(longitude, lattitude, data, goal)
+                    if not map.is_land(longitude, latitude):
+                        df.loc[longitude, latitude] = riskFunc(longitude, latitude, data, goal)
                     else:
-                        df.loc[longitude, lattitude] = "-"
+                        df.loc[longitude, latitude] = "-"
             self.lat = lat
             self.lon = lon
             self.scale = scale
@@ -189,7 +189,7 @@ class MDP:
         Updates dataframe df at positions (lons[i], lats[i]) with the value at vals[i]
 
         Requirements: len(lats) = len(lons) = len(vals)
-            -Each index of lattitude matches with the same index of longitude and will be set to 
+            -Each index of latitude matches with the same index of longitude and will be set to 
             corresponding value in vals
         """
         if not df:
@@ -205,11 +205,11 @@ class MDP:
 
     def updateFrameByFunc(self, lats: list[float], lons: list[float], func: callable, df: pd.DataFrame = None) -> int:
         """
-        Updates dataframe df at positions (lons[i], lats[i]) using a function that takes lattitude and 
+        Updates dataframe df at positions (lons[i], lats[i]) using a function that takes latitude and 
         longitude as input
 
         Requirements: len(lats) = len(lons)
-            -Each index of lattitude matches with the same index of longitude
+            -Each index of latitude matches with the same index of longitude
         """
         if not df:
             df = self.loadFrame()
@@ -223,14 +223,14 @@ class MDP:
         return 1
 
 def main():
-    lattitude = (-12.5, 20)
-    longitude = (88.5, 100)
+    latitude = (-12.5, 31.5)
+    longitude = (88.5, 152.9)
     scale = .5
-    dataset=Dataset(longitude[0], longitude[1], lattitude[0], lattitude[1]) #South East Asia
+    dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #South East Asia
     dataset.generate_states(distance=scale) #needs to be done first
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
-    a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
+    a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
     a.toJSON()
     b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
     utility = b.loadFrame()

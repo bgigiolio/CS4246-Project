@@ -7,10 +7,12 @@ from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 def main():
     ### CREATE DATASET ###
     if True:
-        #dataset=Dataset(88.6, 152.9, -12.4, 31.3) #South East Asia
+        ### SEA ###
+        # latitude = (-12.5, 31.5)
+        # longitude = (88.5, 152.9)
         scale = 1
         longitude = (86, 90)
-        lattitude = (-12, -8)
+        latitude = (-12, -8)
         dataset=Dataset(86, 90, -12, -8)
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
@@ -22,14 +24,14 @@ def main():
 
     if True:
         ###CREATE RISK TABLE ###
-        a = MDP(lat=lattitude, lon=longitude, scale=scale, data=dataset)
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset)
         #b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
         
 
     if True:
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
-        P, R = state_dict_to_P(a.coordToIndex, dataset.states, actions, f"mdp_params/{longitude}_{lattitude}_{scale}/")
+        P, R = state_dict_to_P(a.coordToIndex, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
         print(P, R)
 
         ### save MDP ### #TODO
