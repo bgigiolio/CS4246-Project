@@ -94,11 +94,17 @@ class Dataset:
             name = self.__str__().strip().replace(" ", "")
         file_path=f"saved_datasets/{name}.json"
 
+        # create dir if does not exist
+        try:  
+            os.makedirs("saved_datasets/", exist_ok=True)  
+        except OSError as error: 
+            print(error)
+
         if not os.path.exists(file_path) or erase_current_content:
-            with open(file_path, 'w') as f:
+            with open(file_path, 'w+') as f:
                 f.write('')
 
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w+') as f:
             json.dump(dataset_dict, f)
 
     def set_start_goal_generate_distance(self, start:tuple, goal:tuple):
