@@ -32,7 +32,7 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
         return goalReward
     if (round(lon, 4), round(lat, 4)) in data.states:
         distance = math.sqrt(abs(goal[0] - lon)**2 + abs(goal[1] - lat)**2)
-        return round(data.states[(round(lon, 4), round(lat, 4))]["danger"] - distance, 4)
+        return round((data.states[(round(lon, 4), round(lat, 4))]["danger"] * -1) - distance, 4)
     else:
         return "-"
     
@@ -129,8 +129,6 @@ class MDP:
             self.goal = JSON["goal"]
             return
         else:
-            map = Basemap()
-
             if lat[0] < -90 or lat [1] > 90:
                 raise Exception("latitude out of range")
             if lon[0] < -180 or lon[1] > 180:
@@ -192,7 +190,16 @@ class MDP:
             self.filepath = filePath
         else:
             filePath = self.filepath
-        return pd.read_csv(f"{filePath}/risk.csv")
+        return pd.read_csv(f"{filePath}/risk.csv", index_col=0, header=0)
+    
+    def coordToRisk(self, longitude: float, latitude: float):
+        df = self.loadFrame()
+        # print(df.loc[90.5])
+        return df.loc[longitude, str(latitude)]
+        # return df.at[latitude, longitude]
+    
+    def stateToRisk(self, state: int):
+        return self.coordToRisk(self.indexToCoord[state][0], self.indexToCoord[state][1])
 
     def updateFrame(self, lats: list[float], lons: list[float], vals: [float], df: pd.DataFrame = None) -> int:
         """
@@ -234,7 +241,7 @@ class MDP:
 
 def main():
     latitude = (-12.5, 31.5)
-    longitude = (88.5, 152.9)
+    longitude = (88.5, 153)
     scale = .5
     dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #South East Asia
     dataset.generate_states(distance=scale) #needs to be done first
@@ -242,8 +249,8 @@ def main():
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
     a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
     a.toJSON()
-    b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
-    utility = b.loadFrame()
+    b = MDP(JSON_file="riskMaps\(-12.5, 31.5)_(88.5, 153)_0.5\JSON.json")
+    print(b.stateToRisk(2001))
 
 if __name__ == "__main__":
     main()

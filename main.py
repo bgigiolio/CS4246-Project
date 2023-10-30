@@ -31,7 +31,7 @@ def main():
     if True:
         ###CREATE RISK TABLE ###
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset)
-        #b = MDP(JSON_file="riskMaps\(-12.5, 20)_(88.5, 100)_0.5\JSON.json")
+        print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         
 
     if True:

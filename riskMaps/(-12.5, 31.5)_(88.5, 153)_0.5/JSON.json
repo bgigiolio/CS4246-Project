@@ -8935,7 +8935,10 @@
         }
     },
     "filepath": "riskMaps/(-12.5, 31.5)_(88.5, 153)_0.5",
-    "goal": null,
+    "goal": [
+        95,
+        -5.5
+    ],
     "indexToCoord": {
         "0": [
             88.5,
