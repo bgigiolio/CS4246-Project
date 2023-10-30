@@ -43,7 +43,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     coords_to_index = {j : i for i, j in coords.items()}
 
     prevPoint = start
-    for i in num_states:
+    for i in range(num_states):
         if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
@@ -52,6 +52,31 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
         prevPoint = start
 
-plotActionsList(map, (-50,-50), [1,1,0,0,0], 5)
+def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords: dict[int, tuple[float,float]] = {}):
+    print(len(value_policy))
+    print(len(index_to_coords))
+    values = value_policy.values()
+    max_value = max(values)
+    min_value = min(values)
+
+    for k, v in value_policy.items():
+        coord = index_to_coords[k]
+        curr_alpha = 0
+        curr_color = "b"
+        if v >=0:
+            curr_alpha = v/max_value
+            curr_color = "g"
+
+        else:
+            curr_alpha = v/min_value
+            curr_color = "r"
+
+        map.scatter(coord[0], coord[1], s=100, marker='s', color=curr_color, latlon=True, alpha=curr_alpha)
+        
+
+
+# plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
+
+mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
 
 plt.show()
