@@ -62,6 +62,7 @@ import numpy as _np
 import scipy.sparse as _sp
 
 import mdptoolbox.util as _util
+import statistics
 
 _MSG_STOP_MAX_ITER = "Iterating stopped due to maximum number of iterations " \
     "condition."
@@ -589,6 +590,9 @@ class PolicyIteration(MDP):
             self.policy = policy0
         # set the initial values to zero
         self.V = _np.zeros(self.S)
+        self.V_avg = []
+        self.label = "PI"
+
         # Do some setup depending on the evaluation type
         if eval_type in (0, "matrix"):
             self.eval_type = "matrix"
@@ -756,6 +760,7 @@ class PolicyIteration(MDP):
             # This should update the classes policy attribute but leave the
             # value alone
             policy_next, null = self._bellmanOperator()
+            self.V_avg.append(self.V.tolist())
             del null
             # calculate in how many places does the old policy disagree with
             # the new policy
@@ -976,7 +981,7 @@ class QLearning(MDP):
 
         # We don't want to send this to MDP because _computePR should not be
         # run on it, so check that it defines an MDP
-        _util.check(transitions, reward)
+        #_util.check(transitions, reward)
 
         # Store P, S, and A
         self.S, self.A = _computeDimensions(transitions)
@@ -1015,20 +1020,24 @@ class QLearning(MDP):
                 a = _np.random.randint(0, self.A)
 
             # Simulating next state s_new and reward associated to <s,s_new,a>
-            p_s_new = _np.random.random()
-            p = 0
-            s_new = -1
-            while (p < p_s_new) and (s_new < (self.S - 1)):
-                s_new = s_new + 1
-                p = p + self.P[a][s, s_new]
+            # p_s_new = _np.random.random()
+            # p = 0
+            # s_new = -1
+            # while (p < p_s_new) and (s_new < (self.S - 1)):
+            #     s_new = s_new + 1
+            #     p = p + self.P[a][s, s_new]
 
-            try:
-                r = self.R[a][s, s_new]
-            except IndexError:
-                try:
-                    r = self.R[s, a]
-                except IndexError:
-                    r = self.R[s]
+            # try:
+            #     r = self.R[a][s, s_new]
+            # except IndexError:
+            #     try:
+            #         r = self.R[s, a]
+            #     except IndexError:
+            #         r = self.R[s]
+
+            # modification of simulation of next state (just one next state)
+            s_new = int(self.P[a][s])
+            r = self.R[s_new][a]
 
             # Updating the value of Q
             # Decaying update coefficient (1/sqrt(n+2)) can be changed
@@ -1313,6 +1322,8 @@ class ValueIteration(MDP):
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
         #print("thresh", self.thresh)
+        self.V_avg = []
+        self.label = "VI"
 
     def _boundIter(self, epsilon):
         # Compute a bound for the number of iterations.
@@ -1380,7 +1391,7 @@ class ValueIteration(MDP):
             #print(self.V)
             self.policy, self.V = self._bellmanOperator()
             #print(self.policy, self.V)
-
+            self.V_avg.append(self.V.tolist())
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
