@@ -12,11 +12,13 @@ def main():
         # latitude = (-12.5, 31.5)
         # longitude = (88.5, 153)
         # scale = .5
+        # goal = (95, -5.5)
 
         # ### DEMO ###
         scale = 1
         longitude = (86, 90)
         latitude = (-12, -8)
+        goal = (88, -10)
 
         
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1])
@@ -30,7 +32,7 @@ def main():
 
     if True:
         ###CREATE RISK TABLE ###
-        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset)
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
         print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         
 
