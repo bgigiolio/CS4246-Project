@@ -82,7 +82,7 @@ def generate_P_R_matrix(grid, actions):
 P is NOT probability matrix, it is transition matrix
 P[i][j] is the result state of taking aciton i from state j
 """  
-def state_dict_to_P(coord_to_index_map: dict, states: dict, actions: dict, folder_path: str = None):
+def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, folder_path: str = None):
     A_count = len(actions)
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
@@ -100,11 +100,11 @@ def state_dict_to_P(coord_to_index_map: dict, states: dict, actions: dict, folde
             neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
-            R[curr_state][action] = 0 - states[neighbour[0]]['to_goal']
+            R[curr_state][action] = index_to_reward_func(neighbour_state)
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
-            R[curr_state][remaining_action] = 0 - states[coord]['to_goal']
+            R[curr_state][remaining_action] = index_to_reward_func(curr_state)
             #print(curr_state, remaining_action)
     
     if (not folder_path):
@@ -123,9 +123,9 @@ def save_result(vi: mdp.MDP, folder_path: str):
         os.makedirs(folder_path, exist_ok=True)  
     except OSError as error: 
         print(error)
-    print(vi.V_avg)
+    print(vi.V_iter)
     with open(folder_path + "JSON.json", "w+") as f:
-        json.dump({"policy": vi.policy, "utility": vi.V_avg, "iter": vi.iter}, f)
+        json.dump({"policy": vi.policy, "utility": vi.V_iter, "iter": vi.iter}, f)
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])

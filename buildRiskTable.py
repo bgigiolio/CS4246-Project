@@ -159,8 +159,8 @@ class MDP:
             self.lon = lon
             self.scale = scale
             self.goal = goal
-            try:  
-                os.mkdir(f"riskMaps/{self.lat}_{self.lon}_{self.scale}")  
+            try:
+                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}", exist_ok=True)  
             except OSError as error: 
                 print(error)  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
