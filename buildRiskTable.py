@@ -169,7 +169,7 @@ class MDP:
                 print(error)  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
             self.generateCSV(df=df)
-            self.toJSON()
+            #self.toJSON()
         
 
     def toJSON(self):
