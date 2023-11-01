@@ -46,7 +46,7 @@ def read_dataset(name):
     states_str=dataset['states']
     states={}
     for key in tqdm.tqdm(states_str.keys(), 'reading saved dataset'):
-        floats=key[1:-2].split(',')
+        floats=key[1:-1].split(',')
         key_tuple=(float(floats[0]), float(floats[1]))
         states[key_tuple]=states_str[key]
         #changing from list of lists to touples because json don't like tuples

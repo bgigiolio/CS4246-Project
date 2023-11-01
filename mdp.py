@@ -4,6 +4,8 @@ from pprint import pprint
 import numpy as np
 import json
 import os
+import tqdm
+import math
 
 """
 Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
@@ -82,32 +84,38 @@ def generate_P_R_matrix(grid, actions):
 P is NOT probability matrix, it is transition matrix
 P[i][j] is the result state of taking aciton i from state j
 """  
-def state_dict_to_P(coord_to_index_map: dict, states: dict, actions: dict, folder_path: str = None):
+def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, folder_path: str = None):
     A_count = len(actions)
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
+
+    penalty_for_not_moving = -100000000000000
 
     # print(states)
     # print()
     # print(coord_to_index_map)
 
-    for coord in states:
+    for coord in tqdm.tqdm(states, "generating P and R matrix"):
         curr_state = coord_to_index_map[coord[0]][coord[1]]
         neighbour_lst = states[coord]['neighbours']
         action_set = set(range(A_count))
+        
         for neighbour in neighbour_lst:
             action = neighbour[1]
             neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
-            R[curr_state][action] = 0 - states[neighbour[0]]['to_goal']
+            try:
+                R[curr_state][action] = float(index_to_reward_func(neighbour_state))
+            except:
+                R[curr_state][action] = penalty_for_not_moving
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
-            R[curr_state][remaining_action] = 0 - states[coord]['to_goal']
+            R[curr_state][remaining_action] = penalty_for_not_moving
             #print(curr_state, remaining_action)
     
-    if (not folder_path):
+    if (folder_path):
         try:  
             os.makedirs(folder_path, exist_ok=True)  
         except OSError as error: 
@@ -123,9 +131,26 @@ def save_result(vi: mdp.MDP, folder_path: str):
         os.makedirs(folder_path, exist_ok=True)  
     except OSError as error: 
         print(error)
-    print(vi.V_avg)
+
     with open(folder_path + "JSON.json", "w+") as f:
-        json.dump({"policy": vi.policy, "utility": vi.V_avg, "iter": vi.iter}, f)
+        json.dump({"policy": vi.policy, "utility": vi.V_iter, "iter": vi.iter}, f)
+
+def is_valid_policy(policy, index_to_coord_map, states, R):
+    invalid_coords = []
+
+    for state in range(len(policy)):
+        coord = (index_to_coord_map[state][0], index_to_coord_map[state][1])
+        action = policy[state]
+        list_of_valid_actions = [neighbour[1] for neighbour in states[coord]['neighbours']]
+
+        if (action in list_of_valid_actions):
+            pass
+        else:
+            invalid_coords.append(coord)
+
+    return invalid_coords
+
+
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])
