@@ -26,7 +26,10 @@
         }
     },
     "filepath": "riskMaps/(-12, -8)_(86, 90)_1",
-    "goal": null,
+    "goal": [
+        88,
+        -10
+    ],
     "indexToCoord": {
         "0": [
             86,

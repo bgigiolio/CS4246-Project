@@ -6,9 +6,36 @@ import tqdm
 import random
 import json
 import os
+import rasterio
+from visualize_dataset import plot_dataset_on_map
 
+#important
 #TODO - relate the danger data to the amount of ships through the area
+
+# not important
 #TODO - diagonal movement for the boats?
+#TODO - information about nearby countries in order to use for Deep learning solution
+
+#NOT:
+# - normalise density and reward, can easily be done by looping over the keys if that is needed when making the reward function
+
+### SUPPLEMENTARY FUNCTIONS ###
+
+def get_index(input:float, lon_input:bool):
+    "The transofrmation used by the dataset is 0.005, 0.0, -180.015311275, 0.0, -0.005, 85.00264793700009"
+    if lon_input:
+        return int((input+180.015311275)/0.005)
+    else:
+        return int((input-85.00264793700009)/0.005)
+    
+def local_average(row, colon, raster_array, window_size=200):
+    "returns the local averege of the density close to that region"
+    rows, cols=np.shape(raster_array)
+    row_min=max(int(row-window_size/2),0)
+    row_max=min(int(row+window_size/2),rows-1)
+    col_min=max(int(colon-window_size/2),0)
+    col_max=min(int(colon+window_size/2),cols-1)
+    return np.mean(raster_array[row_min:row_max, col_min:col_max])
 
 def read_dataset(name):
     "returns a stored dataset object. The name should include not inlcude .json and the dataset should be in the saved_datasets map"
@@ -19,7 +46,7 @@ def read_dataset(name):
     states_str=dataset['states']
     states={}
     for key in tqdm.tqdm(states_str.keys(), 'reading saved dataset'):
-        floats=key[1:-2].split(',')
+        floats=key[1:-1].split(',')
         key_tuple=(float(floats[0]), float(floats[1]))
         states[key_tuple]=states_str[key]
         #changing from list of lists to touples because json don't like tuples
@@ -31,9 +58,11 @@ def read_dataset(name):
     return Dataset(dataset['min_lon'], dataset['max_lon'], dataset['min_lat'], dataset['max_lat'], \
                    dataset['total_danger'], dataset['total_number_of_attacks'], dataset['goal'], dataset['start'], states, dataset['scale'])
 
-
 def euclidean(t1:tuple, t2:tuple):
     return math.dist(t1,t2)
+
+
+### The class ###
 
 class Dataset:
     "note that the self.states attribute currently {(lon,lat):{neighbours:list, n_attacks:int, danger:float, to_goal:float}}, but will be updated continously. \
@@ -224,19 +253,34 @@ class Dataset:
         self.total_danger=total_danger
         self.total_number_of_attacks=number_of_attacks
 
+    def add_trafic_density(self):
+        file_path = 'ShipDensity_Commercial1.tif'
+        raster_data = rasterio.open(file_path) 
+        print("reading the huge shipping density file...")   
+        raster_array = raster_data.read(1)
+        states=self.states
+        for (lon,lat) in tqdm.tqdm(states, desc="adding traffic density"):
+            row_index=get_index(lon, lon_input=True)
+            colon_index=get_index(lat, lon_input=False)
+            density=local_average(row_index,colon_index, raster_array, window_size=int(self.scale/(0.005)))
+            states[(lon,lat)]['density']=density
+
 def main():
     "an example on how to generate a complete dataset using this code"
-    dataset=Dataset(88.6, 152.9, -12.4, 31.3) #South East Asia
-    scale = 1
-    dataset.generate_states(distance=scale) #needs to be done first
-    dataset.load_pirate_data(spread_of_danger=1)
-    dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
-    print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-    dataset.save("dataset_1")
+    if False:
+        dataset=Dataset(88.6, 152.9, -12.4, 31.3) #South East Asia
+        scale = 1
+        dataset.generate_states(distance=scale) #needs to be done first
+        dataset.load_pirate_data(spread_of_danger=1)
+        dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
+        print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
+        dataset.save("dataset_1")
     dataset=read_dataset("dataset_1")
-    print(dataset.states[dataset.get_closest_state(90, 0)]['neighbours']) #this is working as intended
+    #print(dataset.states[dataset.get_closest_state(90, 0)]['neighbours']) #this is working as intended, (lon,lat):action
+    dataset.add_trafic_density()
+    print(dataset)
 
-    #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
+    plot_dataset_on_map(dataset, Attribute="density", Ranges=10)
 
 if __name__=='__main__':
     main()
