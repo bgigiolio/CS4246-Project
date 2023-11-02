@@ -150,7 +150,38 @@ def is_valid_policy(policy, index_to_coord_map, states, R):
 
     return invalid_coords
 
+class DeepQLearning:
+    def __init__(self, P, R, gamma=0.95, num_episodes=1000, batch_size=32, max_steps=100):
+        self.P = P
+        self.R = R
+        self.state_size = len(R)
+        self.action_size = len(P)
+        self.num_episodes = num_episodes
+        self.batch_size = batch_size
+        self.max_steps = max_steps
 
+        self.agent = mdp.DQNAgent(self.state_size, self.action_size)
+
+    def run(self):
+        for episode in range(self.num_episodes):
+            state = np.random.randint(0, self.state_size)
+        
+        step = 0
+        done = False
+        while not done and step < self.max_steps:
+            action = self.agent.act(np.array([state]))
+            next_state = self.P[action][state]  # Simulated transition
+            reward = self.R[next_state][action]
+            self.agent.remember(np.array([state]), action, reward, np.array([next_state]), done)
+            self.agent.replay(self.batch_size)
+
+            state = next_state
+            step += 1
+
+        # if step >= self.max_steps:
+        #     print
+        
+        self.policy = self.agent.get_policy_function()
 
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])

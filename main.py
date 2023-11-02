@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
-from mdp import state_dict_to_P, save_result, is_valid_policy
+from mdp import state_dict_to_P, save_result, is_valid_policy, DeepQLearning
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from eval import Evaluator
 
@@ -51,12 +51,24 @@ def main():
         ### LOAD MDP ### #TODO
 
         ### SOLVE MDP using MDP toolbox ###
-        vi = ValueIteration(P, R, 0.95)
+        mode = 'VI'
+        gamma = 0.95
+        match mode:
+            case 'VI':
+                vi = ValueIteration(P, R, gamma)
+            case 'PI':
+                vi = PolicyIteration(P, R, gamma)
+            case 'QL':
+                vi = QLearning(P, R, gamma)
+            case 'DQL':
+                vi = DeepQLearning(P, R, gamma)
+
         vi.run()
         # print(vi.policy)
         # print(vi.V_avg)
 
     invalid_coords = is_valid_policy(vi.policy, a.indexToCoord, dataset.states, R)
+    print(invalid_coords)
     
     ### SAVE THE RESULTS #TODO
     # Pontus think at least policy, utilities for every step, steps_to_convergence
