@@ -57,7 +57,7 @@ def main():
         # print(vi.V_avg)
 
     invalid_coords = is_valid_policy(vi.policy, a.indexToCoord, dataset.states, R)
-
+    
     ### SAVE THE RESULTS #TODO
     # Pontus think at least policy, utilities for every step, steps_to_convergence
     save_result(vi, f"results/{longitude}_{latitude}_{scale}_{vi.label}/")

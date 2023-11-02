@@ -64,6 +64,13 @@ import scipy.sparse as _sp
 import mdptoolbox.util as _util
 import statistics
 
+from keras.models import Sequential
+from keras.layers import Dense
+
+from collections import deque
+from keras.optimizers import Adam
+import random
+
 _MSG_STOP_MAX_ITER = "Iterating stopped due to maximum number of iterations " \
     "condition."
 _MSG_STOP_EPSILON_OPTIMAL_POLICY = "Iterating stopped, epsilon-optimal " \
@@ -1555,3 +1562,56 @@ class ValueIterationGS(ValueIteration):
 
         self.V = tuple(self.V.tolist())
         self.policy = tuple(self.policy)
+    
+class DQNAgent:
+    def __init__(self, state_size, action_size):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = []  # Experience replay memory
+        self.gamma = 0.95  # Discount rate
+        self.epsilon = 1.0  # Exploration rate
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.learning_rate = 0.001
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = Sequential([
+            Dense(24, input_dim=self.state_size, activation='relu'),
+            Dense(24, activation='relu'),
+            Dense(self.action_size, activation='linear')
+        ])
+        model.compile(loss='mse', optimizer= Adam(lr=self.learning_rate))
+        return model
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        if _np.random.rand() <= self.epsilon:
+            return _np.random.choice(self.action_size)
+        act_values = self.model.predict(state)
+        return _np.argmax(act_values[0])  # Choose action with highest predicted reward
+
+    def replay(self, batch_size):
+        if len(self.memory) < batch_size:
+            return
+        minibatch = _np.array(random.sample(self.memory, batch_size))
+        for state, action, reward, next_state, done in minibatch:
+            target = reward
+            if not done:
+                target = (reward + self.gamma * _np.amax(self.model.predict(next_state)[0]))
+            target_f = self.model.predict(state)
+            target_f[0][action] = target
+            self.model.fit(state, target_f, epochs=1, verbose=0)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def get_policy_function(self):
+        # Generate the policy function based on the Q-values
+        policy_function = {}
+        for state in range(self.state_size):
+            state_values = self.model.predict(_np.array([state]))[0]
+            best_action = _np.argmax(state_values)
+            policy_function[state] = best_action
+        return policy_function
