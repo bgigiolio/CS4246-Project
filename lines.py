@@ -1,13 +1,14 @@
 from __future__ import annotations
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
-
+import json
 map = Basemap()
 
 map.drawcoastlines()
 
 def moveState(curr_state: tuple[float, float], action: int, granularity: float):
     new_state = curr_state
+    print(action)
     if action == 0:
         new_state = (curr_state[0] + granularity, curr_state[1])    
     elif action == 1:
@@ -18,7 +19,7 @@ def moveState(curr_state: tuple[float, float], action: int, granularity: float):
         new_state = (curr_state[0], curr_state[1] - granularity)
     else:
         raise NotImplementedError("invalid action argument " +  str(action))
-    
+    print(new_state)
     return new_state
         
 
@@ -40,14 +41,14 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     print(num_states)
     print(granularity)
 
-    coords_to_index = {j : i for i, j in coords.items()}
-
+    coords_to_index = {(j[0], j[1]) : i for i, j in coords.items()}
+    print(coords_to_index)
     prevPoint = start
     for i in range(num_states):
         if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
-        action = policyFunction[curr_index]
+        action = policyFunction[int(curr_index)]
         start = moveState(start, action, granularity)
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
         prevPoint = start
@@ -75,8 +76,15 @@ def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords:
         
 
 
+f1 = open('riskMaps/(-12.5, 31.5)_(88.5, 153)_0.5/JSON.json')
+f2 = open('results/(88.5, 153)_(-12.5, 31.5)_0.5_VI/JSON.json')
+actions = json.load(f2)
+data = json.load(f1)
+# print(actions['policy'][1364])
 # plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
+plotActions(map, (90, 0), (150, 20), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=0.5)
+# plt.show()
+# print(actions.keys())
+# mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
 
-mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
-
-plt.show()
+# plt.show()
