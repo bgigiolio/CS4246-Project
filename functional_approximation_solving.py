@@ -25,7 +25,7 @@ class Environement:
         #not used currently
         self.mdp=MDP(lon=(self.dataset.min_lon, self.dataset.max_lon), lat=(self.dataset.min_lat, self.dataset.max_lat), scale=self.dataset.scale, data=self.dataset, goal=self.dataset.goal)
 
-        print("coordToIndex", self.mdp.coordToIndex) #detta borde fungera, jag hade fel
+        #print("coordToIndex", self.mdp.coordToIndex) #detta borde fungera, jag hade fel
 
         #Random ML parameters
         self.batch_size = 32

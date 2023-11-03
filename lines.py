@@ -79,16 +79,16 @@ def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords:
         map.scatter(coord[0], coord[1], s=100, marker='s', color=curr_color, latlon=True, alpha=curr_alpha)
         
 
+if __name__ == "__main__":
+    f1 = open('riskMaps/(-12, -8)_(86, 90)_1/JSON.json')
+    f2 = open('results/(86, 90)_(-12, -8)_1_VI/JSON.json')
+    actions = json.load(f2)
+    data = json.load(f1)
+    # print(actions['policy'][1364])
+    # plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
+    plotActions(map, (86, -12), end=(float(data['goal'][0]),float(data['goal'][1])), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=1)
+    plt.show()
+    # print(actions.keys())
+    # mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
 
-f1 = open('riskMaps/(-12, -8)_(86, 90)_1/JSON.json')
-f2 = open('results/(86, 90)_(-12, -8)_1_VI/JSON.json')
-actions = json.load(f2)
-data = json.load(f1)
-# print(actions['policy'][1364])
-# plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
-plotActions(map, (86, -12), end=(float(data['goal'][0]),float(data['goal'][1])), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=1)
-plt.show()
-# print(actions.keys())
-# mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
-
-# plt.show()
+    # plt.show()

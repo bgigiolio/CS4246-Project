@@ -95,7 +95,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     # print()
     # print(coord_to_index_map)
 
-    for coord in tqdm.tqdm(states, "generating P and R matrix"):
+    for coord in tqdm.tqdm(states.keys(), "generating P and R matrix"):
         curr_state = coord_to_index_map[coord[0]][coord[1]]
         neighbour_lst = states[coord]['neighbours']
         action_set = set(range(A_count))
