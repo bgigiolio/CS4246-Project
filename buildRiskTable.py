@@ -5,6 +5,7 @@ import os
 from dataset import Dataset
 import tqdm
 import json
+import copy
 
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
     """
@@ -115,8 +116,8 @@ class MDP:
             The goal location for the MDP
             Defaults to None (MDP will proceed with no goal)
         """
-        self.loaded_df = pd.DataFrame()
 
+        self.loaded_df = pd.DataFrame()
         if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/JSON.json"):
             if not JSON_file:
                 JSON_file = f"riskMaps/{lat}_{lon}_{scale}/JSON.json"
@@ -169,13 +170,17 @@ class MDP:
                 print(error)  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
             self.generateCSV(df=df)
-            #self.toJSON()
+            df_intermediate = copy.deepcopy(self.loaded_df)
+            self.loaded_df = None
+            self.toJSON()
+            self.loaded_df = df_intermediate
         
 
     def toJSON(self):
         """
         Dumps a JSON version of the class into the riskMaps folder
         """
+
         j = json.dumps(self, default=lambda o: o.__dict__, 
             sort_keys=True, indent=4)
         f = open(f"{self.filepath}/JSON.json", "w")
