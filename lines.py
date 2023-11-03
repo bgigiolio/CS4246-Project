@@ -2,7 +2,10 @@ from __future__ import annotations
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import json
-map = Basemap()
+
+latitude = (-12, -8)
+longitude = (86, 90)
+map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
 
 map.drawcoastlines()
 
@@ -45,6 +48,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     print(coords_to_index)
     prevPoint = start
     for i in range(num_states):
+        print(end)
         if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
@@ -76,14 +80,14 @@ def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords:
         
 
 
-f1 = open('riskMaps/(-12.5, 31.5)_(88.5, 153)_0.5/JSON.json')
-f2 = open('results/(88.5, 153)_(-12.5, 31.5)_0.5_VI/JSON.json')
+f1 = open('riskMaps/(-12, -8)_(86, 90)_1/JSON.json')
+f2 = open('results/(86, 90)_(-12, -8)_1_VI/JSON.json')
 actions = json.load(f2)
 data = json.load(f1)
 # print(actions['policy'][1364])
 # plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
-plotActions(map, (90, 0), (150, 20), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=0.5)
-# plt.show()
+plotActions(map, (86, -12), end=(float(data['goal'][0]),float(data['goal'][1])), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=1)
+plt.show()
 # print(actions.keys())
 # mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
 
