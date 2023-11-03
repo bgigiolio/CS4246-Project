@@ -211,7 +211,7 @@ class MDP:
         df = self.loadFrame()
         
         # print(df.loc[90.5])
-        return df.loc[longitude, str(latitude)]
+        return df.loc[longitude, str(latitude)] #Why str? /Pontus
         # return df.at[latitude, longitude]
     
     def stateToRisk(self, state: int):
