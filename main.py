@@ -1,8 +1,11 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
+from lines import plotActions
 from mdp import state_dict_to_P, save_result, is_valid_policy
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
+from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
 from eval import Evaluator
 
 def main():
@@ -11,7 +14,8 @@ def main():
     latitude = (-12.5, 31.5)
     longitude = (88.5, 153)
     scale = .5
-    goal = (95, -5.5)
+    start = (89, -12)
+    goal = (150, 20)
 
     # ### DEMO ###
     # scale = 1
@@ -74,5 +78,11 @@ def main():
 
         ### VISUALIZE POLICY ###
         #the animation we discussed
+
+    if True:
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=vi.policy, granularity=scale)
+        plt.show()
 
 main()
