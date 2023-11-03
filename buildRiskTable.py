@@ -115,6 +115,8 @@ class MDP:
             The goal location for the MDP
             Defaults to None (MDP will proceed with no goal)
         """
+        self.loaded_df = pd.DataFrame()
+
         if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/JSON.json"):
             if not JSON_file:
                 JSON_file = f"riskMaps/{lat}_{lon}_{scale}/JSON.json"
@@ -143,11 +145,13 @@ class MDP:
             self.indexToCoord = {}
             self.coordToIndex = {}
             counter = 0
+            #print(data.states.keys())
             for n in tqdm.tqdm(range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)), desc="Generating Frame"):
                 longitude = round(n * scale, 4)
                 self.coordToIndex[longitude] = {}
                 for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
                     latitude = round(t * scale, 4)
+                    
                     if (longitude, latitude) in data.states.keys():
                         self.indexToCoord[counter] = (longitude, latitude)
                         self.coordToIndex[longitude][latitude] = counter
@@ -159,13 +163,14 @@ class MDP:
             self.lon = lon
             self.scale = scale
             self.goal = goal
-            try:  
-                os.mkdir(f"riskMaps/{self.lat}_{self.lon}_{self.scale}")  
+            try:
+                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}", exist_ok=True)  
             except OSError as error: 
                 print(error)  
             self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
             self.generateCSV(df=df)
-            self.toJSON()
+            #self.toJSON()
+        
 
     def toJSON(self):
         """
@@ -182,7 +187,7 @@ class MDP:
         """
         df.to_csv(f"{self.filepath}/risk.csv")
 
-    def loadFrame(self, filePath: str = None) -> pd.DataFrame:
+    def loadFrame(self, filePath: str = None, forceLoad: bool = False) -> pd.DataFrame:
         """
         Returns a dataframe stored at filePath
         """
@@ -190,12 +195,18 @@ class MDP:
             self.filepath = filePath
         else:
             filePath = self.filepath
-        return pd.read_csv(f"{filePath}/risk.csv", index_col=0, header=0)
+
+        if (forceLoad or self.loaded_df.empty):
+            self.loaded_df = pd.read_csv(f"{filePath}/risk.csv", index_col=0, header=0)
+            #print(self.loaded_df)
+
+        return self.loaded_df
     
     def coordToRisk(self, longitude: float, latitude: float):
         df = self.loadFrame()
+        
         # print(df.loc[90.5])
-        return df.loc[longitude, str(latitude)]
+        return df.loc[longitude, str(latitude)] #Why str? /Pontus
         # return df.at[latitude, longitude]
     
     def stateToRisk(self, state: int):

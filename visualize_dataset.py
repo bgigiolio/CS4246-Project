@@ -7,7 +7,7 @@ import tqdm
 #TODO: generate range so that equal amount of samples in each range
 
 def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5):
-    "supply a state attributes which is a number such as danger or n_attacks, range 5 means 5 intervals as well as states with 0, regions according to (a,b].\
+    "supply a state attributes which is a number such as, density danger or n_attacks, range 5 means 5 intervals as well as states with 0, regions according to (a,b].\
         Marks start, goal as >, < if defined."
     
     attribute_state_dict={}
@@ -19,8 +19,11 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5):
 
     #creating the range cutoffs:
     attributes=list(attribute_state_dict.keys())
-    
-    range_cuts=[i*max(attributes)/Ranges for i in range(Ranges+1)]
+    if Attribute=="action":
+        range_cuts=[0,1,2,3]
+    else:
+        range_cuts=[i*max(attributes)/Ranges for i in range(Ranges+1)]
+
 
     margin = 2 # buffer to add to the range
     lat_min = dataset.min_lat - margin
@@ -44,12 +47,15 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5):
     m.drawmapboundary(fill_color='#46bcec')
     m.fillcontinents(color = 'white',lake_color='#46bcec') #color of oceans
     
-    lons_0=[]
-    lats_0=[]
-    for j in range(len(attribute_state_dict[0])):
-        lons_0.append(attribute_state_dict[0][j][0])
-        lats_0.append(attribute_state_dict[0][j][1])
-    lons_lats_by_range={(0,0):[lons_0, lats_0]} #format (a,b]
+    if 0 in attribute_state_dict.keys(): #if there is states with 0 seperate those states
+        lons_0=[]
+        lats_0=[]
+        for j in range(len(attribute_state_dict[0])):
+            lons_0.append(attribute_state_dict[0][j][0])
+            lats_0.append(attribute_state_dict[0][j][1])
+        lons_lats_by_range={(0,0):[lons_0, lats_0]} #format (a,b]
+    else:
+        lons_lats_by_range={} #format (a,b]
 
     for i in range(len(range_cuts)-1):
         #initialising every range
@@ -63,12 +69,15 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5):
     
     for (a,b) in lons_lats_by_range.keys():
         [lons, lats]=lons_lats_by_range[(a,b)]
-        lons, lats = m(np.array(lons), np.array(lats)) #convert to map cordinates
-        if a==b:
+        lons, lats = m(np.array(lons), np.array(lats)) #convert to map cordinates! done!
+        if Attribute=="action":
+            mapping={0:"right", 1:"up", 2:"left", 3:"down"}
+            m.scatter(lons, lats, marker = 'o', s=1, zorder=5, label=f'{Attribute} is {mapping[b]}') 
+        elif a==b:
             m.scatter(lons, lats, marker = 'o', s=1, zorder=5, label=f'{Attribute} is {a}') #zorder makes the dots on top of the map
         else:
             m.scatter(lons, lats, marker = 'o', s=1, zorder=5, label=f'{a}<{Attribute}<={b}') #zorder makes the dots on top of the map
-    
+        
     if dataset.goal:
         goal_lon, goal_lat=dataset.goal
         start_lon, start_lat=dataset.start

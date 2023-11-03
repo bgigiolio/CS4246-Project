@@ -9,9 +9,6 @@ import os
 import rasterio
 from visualize_dataset import plot_dataset_on_map
 
-#important
-#TODO - relate the danger data to the amount of ships through the area
-
 # not important
 #TODO - diagonal movement for the boats?
 #TODO - information about nearby countries in order to use for Deep learning solution
@@ -22,20 +19,64 @@ from visualize_dataset import plot_dataset_on_map
 ### SUPPLEMENTARY FUNCTIONS ###
 
 def get_index(input:float, lon_input:bool):
-    "The transofrmation used by the dataset is 0.005, 0.0, -180.015311275, 0.0, -0.005, 85.00264793700009"
+    "The transformation used by the dataset is 0.005, 0.0, -180.015311275, 0.0, -0.005, 85.00264793700009"
     if lon_input:
         return int((input+180.015311275)/0.005)
     else:
-        return int((input-85.00264793700009)/0.005)
+        return int((85.00264793700009-input)/0.005)
     
-def local_average(row, colon, raster_array, window_size=200):
-    "returns the local averege of the density close to that region"
+def get_lon_lat(row,col):
+    return 0.005*col-180.015311275,85.00264793700009-0.005*row #row is latituide
+    
+def local_average(dataset, row, colon, raster_array, window_size=200, method:str="local_averege"):
+    "returns the local averege of the density close to that region\
+        chose either local_averege, local_max or local_sea_averege (untested+slow)"
     rows, cols=np.shape(raster_array)
-    row_min=max(int(row-window_size/2),0)
+    row_min=max(int(row-window_size/2),0) #
     row_max=min(int(row+window_size/2),rows-1)
     col_min=max(int(colon-window_size/2),0)
     col_max=min(int(colon+window_size/2),cols-1)
-    return np.mean(raster_array[row_min:row_max, col_min:col_max])
+
+    if method=="local_averege":
+        return np.mean(raster_array[row_min:row_max, col_min:col_max]) #the averege locally, maybe not great because port of Shanghai effect
+    elif method=="local_max":
+        return np.max(raster_array[row_min:row_max, col_min:col_max]) #then the coast becomes interesting again
+    else: #need to check what very dense local points is land -> about 40 000 times slower..., too inpractical?
+        buffer=2
+        m = Basemap(llcrnrlon=dataset.min_lon-buffer,
+                llcrnrlat=dataset.min_lat-buffer,
+                urcrnrlon=dataset.max_lon+buffer,
+                urcrnrlat=dataset.max_lat+buffer,
+                lat_0=(dataset.max_lat - dataset.min_lat)/2,
+                lon_0=(dataset.max_lon-dataset.min_lon)/2,
+                projection='merc',
+                resolution = 'h', #high resolution
+                area_thresh=10000.,
+                )
+        
+        lons=[]
+        lats=[]
+        for row in range(row_min, row_max+1):
+            for col in range(col_min, col_max+1):
+                lon,lat=get_lon_lat(row,col)
+                lons.append(lon)
+                lats.append(lat)
+        
+        lons_m, lats_m=m(np.array(lons), np.array(lats))
+
+        #A potential speed up could be using Monte Carlo sampling...
+        #ro, co=np.shape(raster_array[row_min:row_max, col_min:col_max])
+        #total=ro*co
+        
+        sea_points=0
+        for lon_m in lons_m:
+            for lat_m in lats_m:
+                print(int(not m.is_land(lon_m, lat_m)))
+                sea_points+=int(not m.is_land(lon_m, lat_m))
+
+        return np.sum(raster_array[row_min:row_max, col_min:col_max])/sea_points
+        
+
 
 def read_dataset(name):
     "returns a stored dataset object. The name should include not inlcude .json and the dataset should be in the saved_datasets map"
@@ -43,10 +84,16 @@ def read_dataset(name):
     with open(file_path, 'r') as f:
         dataset = json.load(f)
 
+    #translating goal and start to touples instead of list
+    [lon,lat]=dataset['start']
+    dataset['start']=(lon,lat)
+    [lon,lat]=dataset['goal']
+    dataset['goal']=(lon,lat)
+
     states_str=dataset['states']
     states={}
     for key in tqdm.tqdm(states_str.keys(), 'reading saved dataset'):
-        floats=key[1:-2].split(',')
+        floats=key[1:-1].split(',')
         key_tuple=(float(floats[0]), float(floats[1]))
         states[key_tuple]=states_str[key]
         #changing from list of lists to touples because json don't like tuples
@@ -55,6 +102,7 @@ def read_dataset(name):
             [[lon, lat], index]=neighbour_list[i]
             neighbour_list[i]=((lon,lat), index)
         states[key_tuple]['neighbours']=neighbour_list
+
     return Dataset(dataset['min_lon'], dataset['max_lon'], dataset['min_lat'], dataset['max_lat'], \
                    dataset['total_danger'], dataset['total_number_of_attacks'], dataset['goal'], dataset['start'], states, dataset['scale'])
 
@@ -253,34 +301,36 @@ class Dataset:
         self.total_danger=total_danger
         self.total_number_of_attacks=number_of_attacks
 
-    def add_trafic_density(self):
+    def add_trafic_density(self, method:str="local_averege"):
+        "chose either local_max, local_averege, local_sea_averege (obs, very slow! not tested therefore)"
         file_path = 'ShipDensity_Commercial1.tif'
         raster_data = rasterio.open(file_path) 
         print("reading the huge shipping density file...")   
         raster_array = raster_data.read(1)
         states=self.states
         for (lon,lat) in tqdm.tqdm(states, desc="adding traffic density"):
-            row_index=get_index(lon, lon_input=True)
-            colon_index=get_index(lat, lon_input=False)
-            density=local_average(row_index,colon_index, raster_array, window_size=int(self.scale/(0.005)))
+            colon_index=get_index(lon, lon_input=True) #least latitude leads to the highest row index in the density dataset
+            row_index=get_index(lat, lon_input=False)
+            density=local_average(self, row_index,colon_index, raster_array, int(self.scale/(0.005)), method)
             states[(lon,lat)]['density']=density
+        self.states=states
 
 def main():
     "an example on how to generate a complete dataset using this code"
-    if False:
+    if True:
         dataset=Dataset(88.6, 152.9, -12.4, 31.3) #South East Asia
         scale = 1
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
         dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
+        dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        dataset.save("dataset_1")
-    dataset=read_dataset("dataset_1")
-    #print(dataset.states[dataset.get_closest_state(90, 0)]['neighbours']) #this is working as intended, (lon,lat):action
-    dataset.add_trafic_density()
-    print(dataset)
+        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5)
+        #dataset.save("dataset_demo")
+    #dataset=read_dataset("dataset_demo")
+    #print(dataset) 
 
-    plot_dataset_on_map(dataset, Attribute="density", Ranges=10)
+    plot_dataset_on_map(dataset, Attribute="density", Ranges=5) 
 
 if __name__=='__main__':
     main()

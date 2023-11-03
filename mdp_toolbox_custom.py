@@ -590,7 +590,7 @@ class PolicyIteration(MDP):
             self.policy = policy0
         # set the initial values to zero
         self.V = _np.zeros(self.S)
-        self.V_avg = []
+        self.V_iter = []
         self.label = "PI"
 
         # Do some setup depending on the evaluation type
@@ -760,7 +760,7 @@ class PolicyIteration(MDP):
             # This should update the classes policy attribute but leave the
             # value alone
             policy_next, null = self._bellmanOperator()
-            self.V_avg.append(self.V.tolist())
+            self.V_iter.append(self.V.tolist())
             del null
             # calculate in how many places does the old policy disagree with
             # the new policy
@@ -995,6 +995,9 @@ class QLearning(MDP):
         self.Q = _np.zeros((self.S, self.A))
         self.mean_discrepancy = []
 
+        self.V_iter = []
+        self.label = "QL"
+
     def run(self):
         # Run the Q-learning algoritm.
         discrepancy = []
@@ -1058,6 +1061,7 @@ class QLearning(MDP):
 
             # compute the value function and the policy
             self.V = self.Q.max(axis=1)
+            self.V_iter.append(self.V)
             self.policy = self.Q.argmax(axis=1)
 
         self.time = _time.time() - self.time
@@ -1322,7 +1326,7 @@ class ValueIteration(MDP):
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
         #print("thresh", self.thresh)
-        self.V_avg = []
+        self.V_iter = []
         self.label = "VI"
 
     def _boundIter(self, epsilon):
@@ -1391,7 +1395,7 @@ class ValueIteration(MDP):
             #print(self.V)
             self.policy, self.V = self._bellmanOperator()
             #print(self.policy, self.V)
-            self.V_avg.append(self.V.tolist())
+            self.V_iter.append(self.V.tolist())
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
