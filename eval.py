@@ -113,12 +113,13 @@ class Evaluator():
         self.generateAttacks()
         self.generatePenalty()
 
-    def evalPolicy(self, path: tuple, index_to_coord: dict):
+    def evalPolicy(self, pathDict: dict):
         score = 0
+        path = pathDict["path"]
         for i in range(len(path)):
-            if path[i] == 1 and (index_to_coord[i] in self.penalties):
-                score += self.penalties[index_to_coord[i]]
-        return score
+            if i in self.penalties:
+                score += self.penalties[i]
+        return score + pathDict["distance"]
         
 
 def main():

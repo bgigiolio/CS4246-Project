@@ -8,6 +8,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
+from pathRunner import runPath
 
 def main():
     ### CREATE DATASET ###
@@ -16,32 +17,33 @@ def main():
     longitude = (88.5, 153)
     scale = .5
     goal = (95, -5.5)
+    start = (105, 0)
 
     if False:
         # ### DEMO ###
-        scale = 1
-        longitude = (86, 90)
-        latitude = (-12, -8)
-        goal = (88, -10)
+        # scale = 1
+        # longitude = (86, 90)
+        # latitude = (-12, -8)
+        # goal = (88, -10)
         
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
         dataset.set_start_goal_generate_distance(start=start, goal=goal)
-        dataset.add_trafic_density(method="local_averege") 
+        # dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        #dataset.save("dataset_main")
+        dataset.save("dataset_1")
     dataset=read_dataset("dataset_1")
 
     if True: #MDP pipeline
         ###CREATE RISK TABLE ###
 
         # ### DEMO ###
-        scale = 1
-        longitude = (86, 90)
-        latitude = (-12, -8)
-        goal = (88, -10)
-        start= (86, -12)
+        # scale = 1
+        # longitude = (86, 90)
+        # latitude = (-12, -8)
+        # goal = (88, -10)
+        # start= (86, -12)
 
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
         print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
@@ -63,8 +65,9 @@ def main():
         save_result(vi, f"results/{longitude}_{latitude}_{scale}_{vi.label}/")
 
         ### EVALUATE POLICY ###
+        path = runPath(policy=vi.policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
-        print("Path score: ", evaluator.evalPolicy(vi.policy, a.indexToCoord))
+        print("Path score: ", evaluator.evalPolicy(path))
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
