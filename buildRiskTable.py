@@ -118,9 +118,9 @@ class MDP:
         """
 
         self.loaded_df = pd.DataFrame()
-        if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}/JSON.json"):
+        if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"):
             if not JSON_file:
-                JSON_file = f"riskMaps/{lat}_{lon}_{scale}/JSON.json"
+                JSON_file = f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"
             f = open(JSON_file,) 
             JSON = json.load(f)
             self.indexToCoord = as_int(JSON["indexToCoord"])
