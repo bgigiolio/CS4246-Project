@@ -31,7 +31,7 @@ def main():
         dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
         #dataset.save("dataset_main")
-    dataset=read_dataset("dataset_main")
+    dataset=read_dataset("dataset_1")
 
     if True: #MDP pipeline
         ###CREATE RISK TABLE ###
