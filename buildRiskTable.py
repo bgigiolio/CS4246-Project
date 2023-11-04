@@ -165,10 +165,10 @@ class MDP:
             self.scale = scale
             self.goal = goal
             try:
-                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}", exist_ok=True)  
+                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}", exist_ok=True)  
             except OSError as error: 
                 print(error)  
-            self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}"
+            self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}"
             self.generateCSV(df=df)
             df_intermediate = copy.deepcopy(self.loaded_df)
             self.loaded_df = None
