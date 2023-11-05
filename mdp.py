@@ -89,7 +89,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    penalty_for_not_moving = -100000000000000
+    penalty_for_not_moving = -1e8
 
     # print(states)
     # print()
@@ -124,18 +124,214 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
         with open(folder_path + "JSON.json", "w+") as f:
             json.dump({"P": P.tolist(), "R": R.tolist()}, f)
 
-    return P, R
+    return P.astype(int), R.astype(float)
 
-def save_result(vi: mdp.MDP, folder_path: str):
+import numpy as np
+
+CONST_GAMMA = 0.95
+CONST_EPSILON = 1e-11
+CONST_THETA = 1e-11
+CONST_MAX_ITER = 10000
+CONST_ALPHA = 0.05
+CONST_EPSILON_GREEDY = 0.1
+CONST_EPISODES = 100000
+
+def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
+    num_actions = len(transitions)
+    num_states = len(rewards)
+    
+    V = np.zeros(num_states)
+    
+    for i in tqdm.tqdm(range(max_iter), "iteration"):
+        delta = 0
+        for s in range(num_states):
+            v = np.copy(V[s])
+
+            Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
+
+            V[s] = max(Q_values)
+            
+            delta = max(delta, abs(v - V[s]))
+
+            #print(Q_values, V)
+        
+        if delta < epsilon:
+            break
+
+        #print()
+    
+    # Extract the optimal policy
+    policy = np.zeros(num_states, dtype=int)
+    for s in range(num_states):
+        Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
+        policy[s] = np.argmax(Q_values)
+    
+    return V, policy
+
+import numpy as np
+
+def policy_evaluation(policy, transitions, rewards, gamma = CONST_GAMMA, theta = CONST_THETA):
+    num_states = len(rewards)
+    
+    V = np.zeros(num_states)
+    
+    while True:
+        delta = 0
+        for s in range(num_states):
+            v = np.copy(V[s])
+            action = policy[s]
+            
+            next_state = transitions[action][s]  # Assuming a deterministic policy
+            reward = rewards[s][action]
+            V[s] = reward + gamma * V[next_state]
+            
+            delta = max(delta, abs(v - V[s]))
+        
+        if delta < theta:
+            break
+        
+    return V
+
+def policy_improvement(transitions, rewards, V, old_policy, gamma = CONST_GAMMA):
+    num_actions = len(transitions)
+    num_states = len(rewards)
+    
+    policy_stable = True
+    new_policy = np.zeros(num_states, dtype=int)
+    
+    for s in range(num_states):
+        action_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
+        new_policy[s] = np.argmax(action_values)
+        
+        if old_policy[s] != new_policy[s]:
+            policy_stable = False
+            
+    return new_policy, policy_stable
+
+def policy_iteration(transitions, rewards, gamma = CONST_GAMMA, max_iter = CONST_MAX_ITER):
+    num_actions = len(transitions)
+    num_states = len(rewards)
+    
+    policy = np.random.randint(num_actions, size=num_states)
+    
+    for i in tqdm.tqdm(range(max_iter), "iteration"):
+        V = policy_evaluation(policy, transitions, rewards, gamma)
+        new_policy, policy_stable = policy_improvement(transitions, rewards, V, policy, gamma)
+        
+        if policy_stable:
+            break
+        
+        policy = new_policy
+    
+    return V, policy
+
+def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
+    num_actions = len(transitions)
+    num_states = len(rewards)
+
+    Q = np.zeros((num_states, num_actions))
+
+    for _ in tqdm.tqdm(range(num_episodes)):
+        delta = 0
+        s = np.random.randint(0, num_states)
+
+        for i in range(max_iter):
+            if np.random.uniform(0, 1) < epsilon_greedy:
+                action = np.random.randint(0, num_actions)  # Random action
+            else:
+                action = np.argmax(Q[s])
+
+            next_state = transitions[action][s]
+            reward = rewards[s][action]
+
+            max_next_action = np.max(Q[next_state])
+
+            Q[s][action] += alpha * (reward + gamma * max_next_action - Q[s][action])
+            delta = max(delta, np.abs(alpha * (reward + gamma * max_next_action - Q[s][action])))
+
+            if (np.isnan(Q[s][action])):
+                print("problem")
+                print(alpha * (reward + gamma * max_next_action))
+                break
+
+            #print(Q[s])
+            s = next_state
+
+            if next_state == terminal_state:  # terminal_state is the state where the episode ends
+                break
+        #print()
+        if (delta < epsilon):
+            break
+
+    V = np.zeros(num_states)
+    policy = np.zeros(num_states, dtype=int)
+    for s in range(num_states):
+        V[s] = np.max(Q[s])
+        policy[s] = np.argmax(Q[s])
+
+    return V, policy
+
+def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
+    num_states = len(transitions)
+    num_actions = len(transitions[0])
+
+    Q = np.zeros((num_states, num_actions))
+
+    for episode in range(num_episodes):
+        delta = 0
+        s = np.random.randint(0, num_states) 
+
+        if np.random.uniform(0, 1) < epsilon_greedy:
+            action = np.random.randint(0, num_actions)
+        else:
+            action = np.argmax(Q[s])
+
+        while True:
+            next_state = transitions[action][s]
+            reward = rewards[s][action]
+
+            if np.random.uniform(0, 1) < epsilon_greedy:
+                next_action = np.random.randint(0, num_actions)  # Random next action
+            else:
+                next_action = np.argmax(Q[next_state])
+
+            Q[s][action] += alpha * (reward + gamma * Q[next_state][next_action] - Q[s][action])
+            delta = max(delta, np.abs(alpha * (reward + gamma * Q[next_state][next_action] - Q[s][action])))
+
+            s = next_state
+            action = next_action
+
+            if next_state == terminal_state:  # terminal_state is the state where the episode ends
+                break
+        if (delta < epsilon):
+            break
+
+    V = np.zeros(num_states)
+    policy = np.zeros(num_states, dtype=int)
+    for s in range(num_states):
+        V[s] = np.max(Q[s])
+        policy[s] = np.argmax(Q[s])
+
+    return V, policy
+
+def save_result(policy: np.ndarray, V: np.ndarray, folder_path: str):
     try:  
         os.makedirs(folder_path, exist_ok=True)  
     except OSError as error: 
         print(error)
 
     with open(folder_path + "JSON.json", "w+") as f:
-        json.dump({"policy": vi.policy, "utility": vi.V_iter, "iter": vi.iter}, f)
+        json.dump({"policy": policy.tolist(), "utility": V.tolist(), "iter": len(V)}, f)
 
-def is_valid_policy(policy, index_to_coord_map, states, R):
+def read_result(folder_path):
+    with open(f'{folder_path}/JSON.json') as f:
+        d = json.load(f)
+        policy = np.asarray(d["policy"], dtype=np.float64)
+        V = np.asarray(d["utility"], dtype=np.float64)
+
+    return V, policy
+
+def is_valid_policy(policy, index_to_coord_map, states):
     invalid_coords = []
 
     for state in range(len(policy)):
@@ -151,19 +347,24 @@ def is_valid_policy(policy, index_to_coord_map, states, R):
     return invalid_coords
 
 
-
 def main():
     grid = np.array([[0.1,0.2],[0.3,0.4]])
     actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
     P,R = generate_P_R_matrix(grid, actions)
 
-    P = np.array([[2, 3, 0, 1], [1, 0, 3, 2]])
-    R = np.array([[0.3, 0.2], [0.4, 0.1], [0.1, 0.4], [0.2, 0.3]])
+    neg_reward = -1000
+
+    P = np.array([[2, 3, 2, 3], [1, 1, 3, 3]])
+    R = np.array([[0.1, 0.1], [10, neg_reward], [neg_reward, 10], [neg_reward, neg_reward]])
 
     print(P)
-    vi = mdp.FiniteHorizon(P, R, 0.95, 5)
-    vi.run()
-    print(vi.policy)
+    print(R)
+    # vi = mdp.FiniteHorizon(P, R, 0.95, 5)
+    # vi.run()
+    # print(vi.policy)
+
+    V, policy = Q_learning(P, R, terminal_state=3)
+    print(V, policy)
 
 if __name__=='__main__':
     main()
