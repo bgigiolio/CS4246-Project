@@ -57,15 +57,21 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
         prevPoint = start
 
-def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords: dict[int, tuple[float,float]] = {}):
+def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[int, tuple[float,float]] = {}, size: float=100):
     print(len(value_policy))
     print(len(index_to_coords))
-    values = value_policy.values()
+
+    value_dict = {}
+
+    for i in range(len(value_policy)):
+        value_dict[i] = value_policy[i]
+
+    values = value_dict.values()
     max_value = max(values)
     min_value = min(values)
 
-    for k, v in value_policy.items():
-        coord = index_to_coords[k]
+    for k, v in value_dict.items():
+        coord = index_to_coords[str(k)]
         curr_alpha = 0
         curr_color = "b"
         if v >=0:
@@ -76,19 +82,19 @@ def mapUtility(map: Basemap, value_policy: dict[int, float]={}, index_to_coords:
             curr_alpha = v/min_value
             curr_color = "r"
 
-        map.scatter(coord[0], coord[1], s=100, marker='s', color=curr_color, latlon=True, alpha=curr_alpha)
+        map.scatter(coord[0], coord[1], s=size, marker='s', color=curr_color, latlon=True, alpha=curr_alpha)
         
 
 if __name__ == "__main__":
-    f1 = open('riskMaps/(-12, -8)_(86, 90)_1/JSON.json')
+    f1 = open('riskMaps/(-12, -8)_(86, 90)_1_(88, -10)/JSON.json')
     f2 = open('results/(86, 90)_(-12, -8)_1_VI/JSON.json')
     actions = json.load(f2)
     data = json.load(f1)
     # print(actions['policy'][1364])
     # plotActionsList(map, (-50,-70), [1,1,0,0,0], 5)
-    plotActions(map, (86, -12), end=(float(data['goal'][0]),float(data['goal'][1])), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=1)
-    plt.show()
-    # print(actions.keys())
-    # mapUtility(map, {0:1, 1:-1, 2:-0.5, 3:0.5}, {0:[-50,-70], 1:[-50.5,-70], 2:[-51, -70], 3:[-51.5, -70]})
-
+    # plotActions(map, (86, -12), end=(float(data['goal'][0]),float(data['goal'][1])), coords=data['indexToCoord'], policyFunction=actions['policy'], granularity=1)
     # plt.show()
+    # print(actions.keys())
+    # print(data['indexToCoord'])
+    mapUtility(map, actions['utility'][0], data['indexToCoord'])
+    plt.show()

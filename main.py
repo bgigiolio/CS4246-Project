@@ -1,14 +1,14 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
-from lines import plotActions
+from lines import plotActions, mapUtility
 from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
-from pathRunner import runPath
+from pathRunner import runPath, coordToPolicy
 
 def main():
     ### CREATE DATASET ###
@@ -41,7 +41,7 @@ def main():
         ###CREATE RISK TABLE ###
 
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
-        print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
+        #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
@@ -82,23 +82,24 @@ def main():
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
     print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
+    print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
 
     if True:
         ### EVALUATE POLICY ###
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
+        coordToPolicy(a.coordToIndex, policy)
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
         environment.encode(environment.dataset.goal, one_hot_encoding=True) #initialization
         environment.set_model()
         environment.train()
-        policy=environment.generate_policy(seperate=True)
+        policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if False:
+    if True:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
@@ -109,5 +110,18 @@ def main():
         plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
 
         #the animation we discussed
+    
+    if True:
+        ### Plot Line ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
+        ### Display utility ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=100)
+        plt.show()
 
 main()

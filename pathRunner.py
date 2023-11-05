@@ -32,5 +32,11 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             curr = (curr[0], curr[1] - scale)
         distance += scale
     return{"path": path, "pathState": pathState, "distance": distance}
+
+def coordToPolicy(indexToCoord, policy) -> dict:
+    d = {}
+    for i in range(len(policy)):
+        d[indexToCoord[i]] = policy[i]
+    return d
     
     
