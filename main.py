@@ -45,7 +45,7 @@ def main():
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
-    if False: 
+    if True: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -54,6 +54,7 @@ def main():
         R(s,a) is reward obtained from performing action a from state s
         """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
+        R=-R #CHANGED SIGN HERE
         print(P, R)
 
         goal_state = a.coordToIndex[goal[0]][goal[1]]
@@ -84,12 +85,12 @@ def main():
     print(policy)
     print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.coordToIndex, policy) #{coord:action} produces
+        #coordToPolicy(a.coordToIndex, policy) #{coord:action} produces #TODO don't work!!!
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")

@@ -151,7 +151,6 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
             Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
             V[s] = max(Q_values)
             delta = max(delta, abs(v - V[s]))
-
             #print(Q_values, V)
         
         if delta < epsilon:

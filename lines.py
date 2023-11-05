@@ -72,7 +72,7 @@ def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[in
     min_value = min(values)
 
     for k, v in value_dict.items():
-        coord = index_to_coords[str(k)]
+        coord = index_to_coords[k]
         curr_alpha = 0
         curr_color = "b"
         if v >=0:
