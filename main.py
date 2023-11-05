@@ -2,7 +2,7 @@ from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions
-from mdp import state_dict_to_P, save_result, is_valid_policy
+from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -33,39 +33,59 @@ def main():
         # dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
         dataset.save("dataset_1")
-    dataset=read_dataset("dataset_1")
+    else:
+        dataset=read_dataset("dataset_1")
 
-    if True: #MDP pipeline
+    if True:
         ###CREATE RISK TABLE ###
-
-        # ### DEMO ###
-        # scale = 1
-        # longitude = (86, 90)
-        # latitude = (-12, -8)
-        # goal = (88, -10)
-        # start= (86, -12)
 
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
         print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
+    if True: 
+        #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
+        """
+        P is A x S matrix, where P[a][s] is state obtained from performing action a in state s
+        R(s,a) is reward obtained from performing action a from state s
+        """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
         print(P, R)
 
+        goal_state = a.coordToIndex[goal[0]][goal[1]]
+
         ### SOLVE MDP using MDP toolbox ###
-        vi = ValueIteration(P, R, 0.95)
-        vi.run()
-        # print(vi.policy)
-        # print(vi.V_avg)
+        ## label values: VI, PI, QL, SARSA
+        label = "QL"
+        ## VALUE ITERATION
+        match label:
+            case "VI":
+                V, policy = value_iteration(P, R)
+                label = "VI"
+            case "PI":
+                V, policy = policy_iteration(P, R)
+                label = "PI"
+            case "QL":
+                V, policy = Q_learning(P, R, terminal_state=goal_state)
+                label = "QL"
+            case "SARSA":
+                V, policy = SARSA(P, R, terminal_state=goal_state)
+                label = "SARSA"
 
-        ### SAVE THE RESULTS 
-        save_result(vi, f"results/{longitude}_{latitude}_{scale}_{vi.label}/")
+        save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
+    else:
+        label = "QL"
+        V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
+    print(policy)
+    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
+
+    if False:
         ### EVALUATE POLICY ###
-        path = runPath(policy=vi.policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
+        path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
 
@@ -77,8 +97,7 @@ def main():
         policy=environment.generate_policy(seperate=True)
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    visualize = False
-    if visualize:
+    if False:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
