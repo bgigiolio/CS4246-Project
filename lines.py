@@ -12,6 +12,7 @@ map.drawcoastlines()
 def moveState(curr_state: tuple[float, float], action: int, granularity: float):
     new_state = curr_state
     print(action)
+    #actions = {0: "right", 1: "up", 2: "left", 3: "down"}
     if action == 0:
         new_state = (curr_state[0] + granularity, curr_state[1])    
     elif action == 1:
@@ -49,7 +50,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     prevPoint = start
     for i in range(num_states):
         print(end)
-        if prevPoint == end:
+        if prevPoint == end or prevPoint not in coords_to_index: #makes it break if it attempt to go out of bounds, added
             break
         curr_index = coords_to_index[prevPoint]
         action = policyFunction[int(curr_index)]
