@@ -8,7 +8,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
-from pathRunner import runPath
+from pathRunner import runPath, coordToPolicy
 
 def main():
     ### CREATE DATASET ###
@@ -88,6 +88,7 @@ def main():
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
+        coordToPolicy(a.coordToIndex, policy)
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
