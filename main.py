@@ -88,7 +88,7 @@ def main():
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.coordToIndex, policy)
+        coordToPolicy(a.coordToIndex, policy) #{coord:action} produces
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")

@@ -141,23 +141,18 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
     num_states = len(rewards)
     
     V = np.zeros(num_states)
-    
     for i in tqdm.tqdm(range(max_iter), "iteration"):
         delta = 0
         for s in range(num_states):
             v = np.copy(V[s])
-
             Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
-
             V[s] = max(Q_values)
-            
             delta = max(delta, abs(v - V[s]))
 
             #print(Q_values, V)
         
         if delta < epsilon:
             break
-
         #print()
     
     # Extract the optimal policy
