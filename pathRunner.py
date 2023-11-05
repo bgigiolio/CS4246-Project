@@ -6,7 +6,7 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
     path = []
     pathState = []
     history = []
-    while curr != goal:
+    while curr != goal and curr[0] in coordToIndex:
         currState = coordToIndex[curr[0]][curr[1]]
         pathState.append(currState)
         path.append(curr)

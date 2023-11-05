@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
-from lines import plotActions
+from lines import plotActions, mapUtility
 from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
@@ -19,13 +19,14 @@ def main():
     goal = (95, -5.5)
     start = (105, 0)
 
-    if False:
         # ### DEMO ###
-        # scale = 1
-        # longitude = (86, 90)
-        # latitude = (-12, -8)
-        # goal = (88, -10)
-        
+    # scale = 1
+    # longitude = (86, 90)
+    # latitude = (-12, -8)
+    # goal = (88, -10)
+    # start = (86, -12)
+
+    if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
@@ -44,7 +45,7 @@ def main():
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
-    if True: 
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -77,7 +78,7 @@ def main():
 
         save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
     else:
-        label = "QL"
+        label = "VI"
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
     print(policy)
@@ -109,5 +110,18 @@ def main():
         plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
 
         #the animation we discussed
+    
+    if True:
+        ### Plot Line ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
+        ### Display utility ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=100)
+        plt.show()
 
 main()
