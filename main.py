@@ -40,7 +40,7 @@ def main():
         ###CREATE RISK TABLE ###
 
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
-        print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
+        #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
@@ -59,7 +59,7 @@ def main():
 
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "QL"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -81,9 +81,9 @@ def main():
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
     print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
+    print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
@@ -94,10 +94,10 @@ def main():
         environment.encode(environment.dataset.goal, one_hot_encoding=True) #initialization
         environment.set_model()
         environment.train()
-        policy=environment.generate_policy(seperate=True)
+        policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if False:
+    if True:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 

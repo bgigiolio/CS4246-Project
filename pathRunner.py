@@ -17,7 +17,6 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             print(pathState)
             c = 0
             print("Path Followed: ")
-            print(policy)
             for state in pathState:
                 print(f"{path[c]}: {actions[policy[state]]}")
                 c += 1
