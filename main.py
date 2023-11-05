@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
-from lines import plotActions
+from lines import plotActions, mapUtility
 from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
@@ -108,5 +108,18 @@ def main():
         plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
 
         #the animation we discussed
+    
+    if True:
+        ### Plot Line ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
+        ### Display utility ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=100)
+        plt.show()
 
 main()
