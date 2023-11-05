@@ -6,6 +6,7 @@ import json
 import os
 import tqdm
 import math
+import random
 
 """
 Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
@@ -84,12 +85,12 @@ def generate_P_R_matrix(grid, actions):
 P is NOT probability matrix, it is transition matrix
 P[i][j] is the result state of taking aciton i from state j
 """  
-def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, folder_path: str = None):
+def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, goal_state, folder_path: str = None):
     A_count = len(actions)
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    penalty_for_not_moving = -1e8
+    penalty_for_not_moving = -1
 
     # print(states)
     # print()
@@ -107,14 +108,18 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             action_set.remove(action)
             try:
                 #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
-                R[curr_state][action] = states[neighbour[0]]['to_goal']
+                #R[curr_state][action] = -states[neighbour[0]]['to_goal']
+                if (neighbour_state == goal_state):
+                    R[curr_state][action] = 100000
+                else:
+                    R[curr_state][action] = -1
             except:
                 R[curr_state][action] = penalty_for_not_moving
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
-            #R[curr_state][remaining_action] = penalty_for_not_moving
-            R[curr_state][remaining_action] = states[coord]['to_goal']
+            R[curr_state][remaining_action] = penalty_for_not_moving
+            #R[curr_state][remaining_action] = states[coord]['to_goal']
             #print(curr_state, remaining_action)
 
     
@@ -132,8 +137,8 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
 import numpy as np
 
 CONST_GAMMA = 0.95
-CONST_EPSILON = 1e-11
-CONST_THETA = 1e-11
+CONST_EPSILON = 1e-10
+CONST_THETA = 1e-10
 CONST_MAX_ITER = 10000
 CONST_ALPHA = 0.05
 CONST_EPSILON_GREEDY = 0.1
@@ -164,12 +169,14 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
         #print()
     
     # Extract the optimal policy
+    Q_values_lst = []
     policy = np.zeros(num_states, dtype=int)
     for s in range(num_states):
         Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
         policy[s] = np.argmax(Q_values)
+        Q_values_lst.append(list(Q_values))
     
-    return V, policy
+    return V, policy, Q_values_lst
 
 import numpy as np
 
@@ -348,6 +355,46 @@ def is_valid_policy(policy, index_to_coord_map, states):
             invalid_coords.append(coord)
 
     return invalid_coords
+
+def fix_policy(policy, start, goal, coord_to_index_map, index_to_coord_map, states, Q_values_lst = None):
+    visited_states = {}
+    start_state = coord_to_index_map[start[0]][start[1]]
+    goal_state = coord_to_index_map[goal[0]][goal[1]]
+    curr_state = start_state
+    policy_new = np.copy(policy)
+
+    while curr_state != goal_state:
+        proposed_action = policy_new[curr_state]
+        curr_coord = index_to_coord_map[curr_state]
+        neighbour_lst = [neighbour[0] for neighbour in states[curr_coord]['neighbours']]
+        neighbour_action_lst = [neighbour[1] for neighbour in states[curr_coord]['neighbours']]
+        dest_coord = neighbour_lst[neighbour_action_lst.index(proposed_action)]
+        dest_state = coord_to_index_map[dest_coord[0]][dest_coord[1]]
+
+        if (dest_state in visited_states):
+            print(neighbour_lst, neighbour_action_lst, proposed_action)
+
+            neighbour_action_lst.remove(proposed_action)
+            neighbour_lst.remove(dest_coord)
+            if (Q_values_lst != None):
+                Q_values_lst[dest_state][proposed_action] = -math.inf
+                new_action = np.argmax(Q_values_lst[dest_state])
+                #print(Q_values_lst[dest_state])
+            else:
+                new_action = random.choice(neighbour_action_lst)
+
+            dest_coord = neighbour_lst[neighbour_action_lst.index(new_action)]
+            print(new_action, dest_coord)
+            dest_state = coord_to_index_map[dest_coord[0]][dest_coord[1]]
+
+            policy_new[curr_state] = new_action
+        
+        curr_state = dest_state
+        visited_states[dest_state] = True
+
+        print(index_to_coord_map[curr_state])
+    
+    return policy_new
 
 
 def main():

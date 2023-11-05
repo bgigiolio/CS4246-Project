@@ -2,29 +2,30 @@ from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility
-from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
+from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA, fix_policy
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
 from pathRunner import runPath, coordToPolicy
+import numpy as np
 
 def main():
     ### CREATE DATASET ###
-    # ### SEA ###
+    ### SEA ###
     latitude = (-12.5, 31.5)
     longitude = (88.5, 153)
     scale = .5
     goal = (95, -5.5)
-    start = (105, 0)
+    start = (150, 28)
 
         # ### DEMO ###
-    # scale = 1
-    # longitude = (86, 90)
-    # latitude = (-12, -8)
-    # goal = (88, -10)
-    # start = (86, -12)
+    # scale = .5
+    # longitude = (90, 110)
+    # latitude = (-12, 10)
+    # start = (99.5, 4)
+    # goal = (96, -5)
 
     if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
@@ -37,6 +38,8 @@ def main():
     else:
         dataset=read_dataset("dataset_1")
 
+    #print(dataset.states[(100, -1)])
+    #return
     if True:
         ###CREATE RISK TABLE ###
 
@@ -44,6 +47,8 @@ def main():
         #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
+        goal_state = a.coordToIndex[goal[0]][goal[1]]
+        print(goal_state)
 
     if False: 
         #MDP pipeline
@@ -53,10 +58,9 @@ def main():
         P is A x S matrix, where P[a][s] is state obtained from performing action a in state s
         R(s,a) is reward obtained from performing action a from state s
         """
-        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
-        print(P, R)
 
-        goal_state = a.coordToIndex[goal[0]][goal[1]]
+        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, f"mdp_params/{longitude}_{latitude}_{scale}/")
+        print(P, R)
 
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
@@ -64,7 +68,7 @@ def main():
         ## VALUE ITERATION
         match label:
             case "VI":
-                V, policy = value_iteration(P, R)
+                V, policy, Q_values_lst = value_iteration(P, R)
                 label = "VI"
             case "PI":
                 V, policy = policy_iteration(P, R)
@@ -80,16 +84,19 @@ def main():
     else:
         label = "VI"
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
+        Q_values_lst = None
 
     print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
+    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
+    policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states, Q_values_lst)
+    #print(np.array_equal(policy, policy_new))
 
-    if True:
+    if False:
         ### EVALUATE POLICY ###
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.coordToIndex, policy)
+        coordToPolicy(a.indexToCoord, policy)
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
@@ -99,7 +106,7 @@ def main():
         policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if True:
+    if False:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
@@ -115,7 +122,7 @@ def main():
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
-        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy_adj, granularity=scale)
         plt.show()
 
         ### Display utility ###
