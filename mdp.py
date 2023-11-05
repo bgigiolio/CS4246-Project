@@ -106,14 +106,17 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
             try:
-                R[curr_state][action] = float(index_to_reward_func(neighbour_state))
+                #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
+                R[curr_state][action] = states[neighbour[0]]['to_goal']
             except:
                 R[curr_state][action] = penalty_for_not_moving
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
-            R[curr_state][remaining_action] = penalty_for_not_moving
+            #R[curr_state][remaining_action] = penalty_for_not_moving
+            R[curr_state][remaining_action] = states[coord]['to_goal']
             #print(curr_state, remaining_action)
+
     
     if (folder_path):
         try:  
@@ -141,23 +144,18 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
     num_states = len(rewards)
     
     V = np.zeros(num_states)
-    
     for i in tqdm.tqdm(range(max_iter), "iteration"):
         delta = 0
         for s in range(num_states):
             v = np.copy(V[s])
-
             Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
-
             V[s] = max(Q_values)
-            
             delta = max(delta, abs(v - V[s]))
 
             #print(Q_values, V)
         
         if delta < epsilon:
             break
-
         #print()
     
     # Extract the optimal policy
@@ -326,7 +324,7 @@ def save_result(policy: np.ndarray, V: np.ndarray, folder_path: str):
 def read_result(folder_path):
     with open(f'{folder_path}/JSON.json') as f:
         d = json.load(f)
-        policy = np.asarray(d["policy"], dtype=np.float64)
+        policy = np.asarray(d["policy"], dtype=np.int64)
         V = np.asarray(d["utility"], dtype=np.float64)
 
     return V, policy
