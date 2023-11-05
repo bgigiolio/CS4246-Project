@@ -6,7 +6,7 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
     path = []
     pathState = []
     history = []
-    while curr != goal:
+    while curr != goal and curr[0] in coordToIndex:
         currState = coordToIndex[curr[0]][curr[1]]
         pathState.append(currState)
         path.append(curr)
@@ -17,7 +17,6 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             print(pathState)
             c = 0
             print("Path Followed: ")
-            print(policy)
             for state in pathState:
                 print(f"{path[c]}: {actions[policy[state]]}")
                 c += 1
@@ -33,5 +32,11 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             curr = (curr[0], curr[1] - scale)
         distance += scale
     return{"path": path, "pathState": pathState, "distance": distance}
+
+def coordToPolicy(indexToCoord, policy) -> dict:
+    d = {}
+    for i in range(len(policy)):
+        d[indexToCoord[i]] = policy[i]
+    return d
     
     

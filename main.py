@@ -8,7 +8,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
-from pathRunner import runPath
+from pathRunner import runPath, coordToPolicy
 
 def main():
     ### CREATE DATASET ###
@@ -19,13 +19,14 @@ def main():
     goal = (95, -5.5)
     start = (105, 0)
 
-    if False:
         # ### DEMO ###
-        # scale = 1
-        # longitude = (86, 90)
-        # latitude = (-12, -8)
-        # goal = (88, -10)
-        
+    # scale = 1
+    # longitude = (86, 90)
+    # latitude = (-12, -8)
+    # goal = (88, -10)
+    # start = (86, -12)
+
+    if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
@@ -40,7 +41,7 @@ def main():
         ###CREATE RISK TABLE ###
 
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
-        print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
+        #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
@@ -53,13 +54,14 @@ def main():
         R(s,a) is reward obtained from performing action a from state s
         """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
+        R=-R #CHANGED SIGN HERE
         print(P, R)
 
         goal_state = a.coordToIndex[goal[0]][goal[1]]
 
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "QL"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -77,27 +79,29 @@ def main():
 
         save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
     else:
-        label = "QL"
+        label = "VI"
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
     print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
+    print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
+        coordToPolicy(a.indexToCoord, policy)
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
+        coordToPolicy(a.indexToCoord, policy) #{coord:action} produces
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
         environment.encode(environment.dataset.goal, one_hot_encoding=True) #initialization
         environment.set_model()
         environment.train()
-        policy=environment.generate_policy(seperate=True)
+        policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if False:
+    if True:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
@@ -111,9 +115,10 @@ def main():
     
     if True:
         ### Plot Line ###
-        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
         ### Display utility ###
