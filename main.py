@@ -19,13 +19,14 @@ def main():
     goal = (95, -5.5)
     start = (105, 0)
 
-    if False:
         # ### DEMO ###
-        # scale = 1
-        # longitude = (86, 90)
-        # latitude = (-12, -8)
-        # goal = (88, -10)
-        
+    # scale = 1
+    # longitude = (86, 90)
+    # latitude = (-12, -8)
+    # goal = (88, -10)
+    # start = (86, -12)
+
+    if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         dataset.generate_states(distance=scale) #needs to be done first
         dataset.load_pirate_data(spread_of_danger=1)
@@ -44,7 +45,7 @@ def main():
         #print(a.indexToCoord)
         #print(a.coordToIndex)
 
-    if True: 
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -59,7 +60,7 @@ def main():
 
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "QL"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -77,13 +78,13 @@ def main():
 
         save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
     else:
-        label = "QL"
+        label = "VI"
         V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
 
     print(policy)
     print(is_valid_policy(policy, a.indexToCoord, dataset.states))
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
