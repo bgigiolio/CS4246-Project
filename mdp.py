@@ -90,8 +90,8 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    goal_reward = 10000
-    penalty_for_moving = -5
+    goal_reward = 1000
+    penalty_for_moving = -1
     penalty_for_not_moving = -10000
 
     # print(states)
@@ -333,8 +333,8 @@ def save_result(policy: np.ndarray, V: np.ndarray, label:str, folder_path: str):
     with open(f"results/{folder_path}_{label}/JSON.json", "w+") as f:
         json.dump({"policy": policy.tolist(), "utility": V.tolist(), "iter": len(V)}, f)
 
-def read_result(folder_path):
-    with open(f'results/{folder_path}/JSON.json') as f:
+def read_result(label, folder_path):
+    with open(f'results/{folder_path}_{label}/JSON.json') as f:
         d = json.load(f)
         policy = np.asarray(d["policy"], dtype=np.int64)
         V = np.asarray(d["utility"], dtype=np.float64)

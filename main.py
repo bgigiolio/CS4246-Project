@@ -79,7 +79,7 @@ def main():
     if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "PI"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -98,7 +98,7 @@ def main():
         save_result(policy, V, label, DIR_NAME)
     else:
         label = "VI"
-        V, policy = read_result(DIR_NAME)
+        V, policy = read_result(label, DIR_NAME)
 
     policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
     #print(np.array_equal(policy, policy_new))
