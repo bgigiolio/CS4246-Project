@@ -324,13 +324,13 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
     return V, policy
 
-def save_result(policy: np.ndarray, V: np.ndarray, folder_path: str):
+def save_result(policy: np.ndarray, V: np.ndarray, label:str, folder_path: str):
     try:  
-        os.makedirs(f"results/{folder_path}", exist_ok=True)  
+        os.makedirs(f"results/{folder_path}_{label}", exist_ok=True)  
     except OSError as error: 
         print(error)
 
-    with open(f"results/{folder_path}/JSON.json", "w+") as f:
+    with open(f"results/{folder_path}_{label}/JSON.json", "w+") as f:
         json.dump({"policy": policy.tolist(), "utility": V.tolist(), "iter": len(V)}, f)
 
 def read_result(folder_path):

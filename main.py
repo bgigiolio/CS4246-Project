@@ -3,7 +3,6 @@ from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility
 from mdp import *
-from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
@@ -60,7 +59,7 @@ def main():
 
     #return
 
-    if True: 
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -77,10 +76,10 @@ def main():
     
     #return
 
-    if False:
+    if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "VI"
+        label = "PI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -96,7 +95,7 @@ def main():
                 V, policy = SARSA(P, R, terminal_state=goal_state)
                 label = "SARSA"
 
-        save_result(policy, V, DIR_NAME)
+        save_result(policy, V, label, DIR_NAME)
     else:
         label = "VI"
         V, policy = read_result(DIR_NAME)
