@@ -60,7 +60,7 @@ def main():
 
     #return
 
-    if False: 
+    if True: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -108,6 +108,7 @@ def main():
 
     if False:
         ### EVALUATE POLICY ###
+        coordToPolicy(a.indexToCoord, policy)
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
@@ -135,9 +136,10 @@ def main():
     
     if True:
         ### Plot Line ###
-        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy_adj, granularity=scale)
+        map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
         ### Display utility ###

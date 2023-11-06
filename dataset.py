@@ -10,6 +10,7 @@ import rasterio
 from visualize_dataset import plot_dataset_on_map
 
 # not important
+#TODO - fix the rounding at the edge of the world (it rounds down relative to the ) (but can also just do dataset.max_lat, so no real issue even though a bit odd)
 #TODO - diagonal movement for the boats?
 #TODO - information about nearby countries in order to use for Deep learning solution
 
