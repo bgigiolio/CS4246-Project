@@ -90,7 +90,9 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    penalty_for_not_moving = -1
+    goal_reward = 10000
+    penalty_for_moving = -5
+    penalty_for_not_moving = -10000
 
     # print(states)
     # print()
@@ -106,15 +108,13 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
-            try:
-                #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
-                #R[curr_state][action] = -states[neighbour[0]]['to_goal']
-                if (neighbour_state == goal_state):
-                    R[curr_state][action] = 100000
-                else:
-                    R[curr_state][action] = -1
-            except:
-                R[curr_state][action] = penalty_for_not_moving
+
+            #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
+            #R[curr_state][action] = -states[neighbour[0]]['to_goal']
+            if (neighbour_state == goal_state):
+                R[curr_state][action] = goal_reward + penalty_for_moving
+            else:
+                R[curr_state][action] = penalty_for_moving - float(index_to_reward_func(neighbour_state))
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
@@ -125,16 +125,22 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     
     if (folder_path):
         try:  
-            os.makedirs(folder_path, exist_ok=True)  
+            os.makedirs(f"mdp_params/{folder_path}", exist_ok=True)  
         except OSError as error: 
             print(error) 
 
-        with open(folder_path + "JSON.json", "w+") as f:
+        with open(f"mdp_params/{folder_path}/JSON.json", "w+") as f:
             json.dump({"P": P.tolist(), "R": R.tolist()}, f)
 
     return P.astype(int), R.astype(float)
 
-import numpy as np
+def read_mdp_params(folder_path):
+    with open(f'mdp_params/{folder_path}/JSON.json') as f:
+        d = json.load(f)
+        P = np.asarray(d["P"], dtype=np.int64)
+        R = np.asarray(d["R"], dtype=np.float64)
+
+    return P, R
 
 CONST_GAMMA = 0.95
 CONST_EPSILON = 1e-10
@@ -326,15 +332,15 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
 def save_result(policy: np.ndarray, V: np.ndarray, folder_path: str):
     try:  
-        os.makedirs(folder_path, exist_ok=True)  
+        os.makedirs(f"results/{folder_path}", exist_ok=True)  
     except OSError as error: 
         print(error)
 
-    with open(folder_path + "JSON.json", "w+") as f:
+    with open(f"results/{folder_path}/JSON.json", "w+") as f:
         json.dump({"policy": policy.tolist(), "utility": V.tolist(), "iter": len(V)}, f)
 
 def read_result(folder_path):
-    with open(f'{folder_path}/JSON.json') as f:
+    with open(f'results/{folder_path}/JSON.json') as f:
         d = json.load(f)
         policy = np.asarray(d["policy"], dtype=np.int64)
         V = np.asarray(d["utility"], dtype=np.float64)

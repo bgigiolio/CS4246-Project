@@ -78,9 +78,9 @@ def local_average(dataset, row, colon, raster_array, window_size=200, method:str
         
 
 
-def read_dataset(name):
+def read_dataset(folder_path, name = "JSON"):
     "returns a stored dataset object. The name should include not inlcude .json and the dataset should be in the saved_datasets map"
-    file_path=f"saved_datasets/{name}.json"
+    file_path=f"saved_datasets/{folder_path}/{name}.json"
     with open(file_path, 'r') as f:
         dataset = json.load(f)
 
@@ -144,7 +144,7 @@ class Dataset:
         state=min(self.states.keys(), key=lambda k: euclidean((lon_query,lat_query), k))
         return state
 
-    def save(self, name=None, erase_current_content=True):
+    def save(self, folder_path, name = "JSON", erase_current_content=True):
         "Saves the dataset in the saved_datasets map. The format is a dictionary with each attribute a seperate key value pair. The tuple keys are changed to strings because of json.\
         Deafult name is self.__str__ stripped of spaces. No need to add .json manually. Overwrites potential current content in file unless erase_current_content=False.\
         Must have states generated to be saved."
@@ -169,11 +169,11 @@ class Dataset:
         }
         if not name:
             name = self.__str__().strip().replace(" ", "")
-        file_path=f"saved_datasets/{name}.json"
+        file_path=f"saved_datasets/{folder_path}/{name}.json"
 
         # create dir if does not exist
         try:  
-            os.makedirs("saved_datasets/", exist_ok=True)  
+            os.makedirs(f"saved_datasets/{folder_path}", exist_ok=True)  
         except OSError as error: 
             print(error)
 

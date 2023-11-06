@@ -2,7 +2,7 @@ from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility
-from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA, fix_policy
+from mdp import *
 from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ def main():
     longitude = (88.5, 153)
     scale = .5
     goal = (95, -5.5)
-    start = (150, 28)
+    start = (147.5, -2.5)
 
         # ### DEMO ###
     # scale = .5
@@ -27,6 +27,8 @@ def main():
     # start = (99.5, 4)
     # goal = (96, -5)
 
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}"
+
     if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         dataset.generate_states(distance=scale) #needs to be done first
@@ -34,34 +36,48 @@ def main():
         dataset.set_start_goal_generate_distance(start=start, goal=goal)
         # dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        dataset.save("dataset_1")
+        dataset.save(DIR_NAME)
     else:
-        dataset=read_dataset("dataset_1")
+        dataset=read_dataset(DIR_NAME)
 
     #print(dataset.states[(100, -1)])
+
     #return
-    if True:
+
+    if False:
         ###CREATE RISK TABLE ###
 
-        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=None, folder_path=DIR_NAME)
         #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
-        goal_state = a.coordToIndex[goal[0]][goal[1]]
-        print(goal_state)
+    
+    else:
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal, folder_path=DIR_NAME, read_file=True)
+
+    goal_state = a.coordToIndex[goal[0]][goal[1]]
+    print(goal_state)
+
+    #return
 
     if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
+
         """
         P is A x S matrix, where P[a][s] is state obtained from performing action a in state s
         R(s,a) is reward obtained from performing action a from state s
         """
-
-        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, f"mdp_params/{longitude}_{latitude}_{scale}/")
+        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, DIR_NAME)
         print(P, R)
+    else:
+        P, R = read_mdp_params(DIR_NAME)
+        print(P, R)
+    
+    #return
 
+    if False:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
         label = "VI"
@@ -80,16 +96,15 @@ def main():
                 V, policy = SARSA(P, R, terminal_state=goal_state)
                 label = "SARSA"
 
-        save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
+        save_result(policy, V, DIR_NAME)
     else:
         label = "VI"
-        V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
-        Q_values_lst = None
+        V, policy = read_result(DIR_NAME)
 
-    print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states))
-    policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states, Q_values_lst)
+    policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
     #print(np.array_equal(policy, policy_new))
+
+    #return
 
     if False:
         ### EVALUATE POLICY ###

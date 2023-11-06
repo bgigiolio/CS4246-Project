@@ -56,8 +56,6 @@ def as_int(obj: dict):
         dict: The new dictionary with changes if necessary
     """
     return {int(key) : tuple(value) for key, value in obj.items()}
-
-
     
 class MDP:
     """
@@ -84,7 +82,7 @@ class MDP:
     filepath: str
         The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
     """
-    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighborsGoal, data: Dataset = None, JSON_file: str = None, goal: tuple[float, float] = None) -> pd.DataFrame:
+    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighborsGoal, data: Dataset = None, folder_path: str = None, goal: tuple[float, float] = None, read_file = False) -> pd.DataFrame:
         """
         Generates a class to represent an MDP instance
 
@@ -118,11 +116,12 @@ class MDP:
         """
 
         self.loaded_df = pd.DataFrame()
-        if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"):
-            if not JSON_file:
-                JSON_file = f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"
-                # if data.min_lon != lon[0] or data.max_lon != lon[1] or data.min_lat != lat[0] or data.max_lat != lat[1]:
-                #     raise Exception(f"Dataset and Parameters do not match: [PARAM] {lon}, {lat} != [Dataset] ({data.min_lon}, {data.max_lon}), ({data.min_lat}, {data.max_lat})")
+        if read_file and os.path.isfile(f"riskMaps/{folder_path}/JSON.json"):
+            # if not folder_path:
+            #     JSON_file = f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"
+            #     # if data.min_lon != lon[0] or data.max_lon != lon[1] or data.min_lat != lat[0] or data.max_lat != lat[1]:
+            #     #     raise Exception(f"Dataset and Parameters do not match: [PARAM] {lon}, {lat} != [Dataset] ({data.min_lon}, {data.max_lon}), ({data.min_lat}, {data.max_lat})")
+            JSON_file = f"riskMaps/{folder_path}/JSON.json"
             f = open(JSON_file,) 
             JSON = json.load(f)
             self.indexToCoord = as_int(JSON["indexToCoord"])
@@ -167,11 +166,12 @@ class MDP:
                         df.loc[longitude, latitude] = "-"
             self.scale = scale
             self.goal = goal
+            self.filepath = f"riskMaps/{folder_path}"
+
             try:
-                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}", exist_ok=True)  
+                os.makedirs(self.filepath, exist_ok=True)  
             except OSError as error: 
                 print(error)  
-            self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}"
             self.generateCSV(df=df)
             df_intermediate = copy.deepcopy(self.loaded_df)
             self.loaded_df = None
