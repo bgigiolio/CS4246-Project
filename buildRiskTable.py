@@ -7,6 +7,16 @@ import tqdm
 import json
 import copy
 
+MAX_DANGER = 400
+
+
+def normalize(value: float) -> float:
+    if value == 0:
+        return value
+    return round(MAX_DANGER / (1 + math.exp((.01 * -1 * value) + 5)), 4)
+
+
+
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
     """
     All lon, lat pairs mapped to 1
@@ -18,7 +28,7 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
     Generates riskMap using dataset's 'danger' value
     """
     if (round(lon, 4), round(lat, 4)) in data.states:
-        return data.states[(round(lon, 4), round(lat, 4))]["danger"]
+        return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1))
     else:
         return "-"
     
@@ -33,7 +43,7 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
         return goalReward
     if (round(lon, 4), round(lat, 4)) in data.states:
         distance = math.sqrt(abs(goal[0] - lon)**2 + abs(goal[1] - lat)**2)
-        return round((data.states[(round(lon, 4), round(lat, 4))]["danger"] * -1) - distance, 4)
+        return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1) - distance, 4)
     else:
         return "-"
     
@@ -166,6 +176,8 @@ class MDP:
                         df.loc[longitude, latitude] = "-"
             self.scale = scale
             self.goal = goal
+            if folder_path is None:
+                folder_path = f"{self.lon}_{self.lat}_{self.scale}_{self.goal}"
             self.filepath = f"riskMaps/{folder_path}"
 
             try:
@@ -267,8 +279,9 @@ def main():
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
     a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
+    b = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset)
     a.toJSON()
-    b = MDP(JSON_file="riskMaps\(-12.5, 31.5)_(88.5, 153)_0.5\JSON.json")
+    # b = MDP(JSON_file="riskMaps\(-12.5, 31.5)_(88.5, 153)_0.5\JSON.json")
     print(b.stateToRisk(2001))
 
 if __name__ == "__main__":
