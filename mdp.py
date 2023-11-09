@@ -7,6 +7,11 @@ import os
 import tqdm
 import math
 import random
+from collections import deque 
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
+from keras.losses import MeanSquaredError
 
 """
 Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
@@ -148,7 +153,7 @@ CONST_THETA = 1e-16
 CONST_MAX_ITER = 10000
 CONST_ALPHA = 0.05
 CONST_EPSILON_GREEDY = 0.1
-CONST_EPISODES = 100000
+CONST_EPISODES = 10000
 
 def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
     num_actions = len(transitions)
@@ -177,8 +182,6 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
         Q_values_lst.append(list(Q_values))
     
     return V, policy, Q_values_lst
-
-import numpy as np
 
 def policy_evaluation(policy, transitions, rewards, gamma = CONST_GAMMA, theta = CONST_THETA):
     num_states = len(rewards)
@@ -270,8 +273,8 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
                 break
         #print()
-        if (delta < epsilon):
-            break
+        # if (delta < epsilon):
+        #     break
 
     V = np.zeros(num_states)
     policy = np.zeros(num_states, dtype=int)
@@ -313,8 +316,8 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
                 break
-        if (delta < epsilon):
-            break
+        # if (delta < epsilon):
+        #     break
 
     V = np.zeros(num_states)
     policy = np.zeros(num_states, dtype=int)
@@ -323,6 +326,47 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
         policy[s] = np.argmax(Q[s])
 
     return V, policy
+
+class DQNAgent:
+    def __init__(self, state_size, action_size):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = deque(maxlen=2000)
+        self.gamma = 0.95  # Discount factor
+        self.epsilon = 1.0  # Exploration rate
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = Sequential()
+        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size, activation='linear'))
+        model.compile(optimizer=Adam(), loss=MeanSquaredError())
+        return model
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        if np.random.rand() <= self.epsilon:
+            return np.random.randint(self.action_size)
+        q_values = self.model.predict(state)
+        return np.argmax(q_values[0])
+
+    def replay(self, batch_size):
+        minibatch = np.array(random.sample(self.memory, batch_size))
+        for state, action, reward, next_state, done in minibatch:
+            target = reward
+            if not done:
+                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
+            target_f = self.model.predict(state)
+            target_f[0][action] = target
+            self.model.fit(state, target_f, epochs=1, verbose=0)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
 
 def save_result(policy: np.ndarray, V: np.ndarray, label:str, folder_path: str):
     try:  
