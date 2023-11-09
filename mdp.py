@@ -290,7 +290,7 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
     Q = np.zeros((num_states, num_actions))
 
-    for episode in range(num_episodes):
+    for episode in tqdm.tqdm(range(num_episodes)):
         delta = 0
         s = np.random.randint(0, num_states) 
 
