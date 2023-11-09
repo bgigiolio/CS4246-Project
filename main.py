@@ -79,7 +79,7 @@ def main():
     if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "VI"
+        label = "SARSA"
         ## VALUE ITERATION
         match label:
             case "VI":
