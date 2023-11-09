@@ -7,6 +7,16 @@ import tqdm
 import json
 import copy
 
+MAX_DANGER = 400
+
+
+def normalize(value: float) -> float:
+    if value == 0:
+        return value
+    return round(MAX_DANGER / (1 + math.exp((.01 * -1 * value) + 5)), 4)
+
+
+
 def riskCalcNone(lon: float, lat: float, data: Dataset = None) -> float:
     """
     All lon, lat pairs mapped to 1
@@ -18,7 +28,7 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
     Generates riskMap using dataset's 'danger' value
     """
     if (round(lon, 4), round(lat, 4)) in data.states:
-        return data.states[(round(lon, 4), round(lat, 4))]["danger"]
+        return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1))
     else:
         return "-"
     
@@ -33,7 +43,7 @@ def riskCalcNeighborsGoal(lon: float, lat: float, data: Dataset, goal: tuple[flo
         return goalReward
     if (round(lon, 4), round(lat, 4)) in data.states:
         distance = math.sqrt(abs(goal[0] - lon)**2 + abs(goal[1] - lat)**2)
-        return round((data.states[(round(lon, 4), round(lat, 4))]["danger"] * -1) - distance, 4)
+        return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1) - distance, 4)
     else:
         return "-"
     
@@ -56,8 +66,6 @@ def as_int(obj: dict):
         dict: The new dictionary with changes if necessary
     """
     return {int(key) : tuple(value) for key, value in obj.items()}
-
-
     
 class MDP:
     """
@@ -84,7 +92,7 @@ class MDP:
     filepath: str
         The local filepath that stores the riskMap and JSON representation of the class if the class has been archived
     """
-    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighborsGoal, data: Dataset = None, JSON_file: str = None, goal: tuple[float, float] = None) -> pd.DataFrame:
+    def __init__(self, lon: tuple[float, float] = (-180, 180), lat: tuple[float, float] = (-90, 90),  scale: float = .5, riskFunc: callable = riskCalcNeighborsGoal, data: Dataset = None, folder_path: str = None, goal: tuple[float, float] = None, read_file = False) -> pd.DataFrame:
         """
         Generates a class to represent an MDP instance
 
@@ -118,11 +126,12 @@ class MDP:
         """
 
         self.loaded_df = pd.DataFrame()
-        if JSON_file or os.path.isfile(f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"):
-            if not JSON_file:
-                JSON_file = f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"
-                # if data.min_lon != lon[0] or data.max_lon != lon[1] or data.min_lat != lat[0] or data.max_lat != lat[1]:
-                #     raise Exception(f"Dataset and Parameters do not match: [PARAM] {lon}, {lat} != [Dataset] ({data.min_lon}, {data.max_lon}), ({data.min_lat}, {data.max_lat})")
+        if read_file and os.path.isfile(f"riskMaps/{folder_path}/JSON.json"):
+            # if not folder_path:
+            #     JSON_file = f"riskMaps/{lat}_{lon}_{scale}_{goal}/JSON.json"
+            #     # if data.min_lon != lon[0] or data.max_lon != lon[1] or data.min_lat != lat[0] or data.max_lat != lat[1]:
+            #     #     raise Exception(f"Dataset and Parameters do not match: [PARAM] {lon}, {lat} != [Dataset] ({data.min_lon}, {data.max_lon}), ({data.min_lat}, {data.max_lat})")
+            JSON_file = f"riskMaps/{folder_path}/JSON.json"
             f = open(JSON_file,) 
             JSON = json.load(f)
             self.indexToCoord = as_int(JSON["indexToCoord"])
@@ -167,11 +176,14 @@ class MDP:
                         df.loc[longitude, latitude] = "-"
             self.scale = scale
             self.goal = goal
+            if folder_path is None:
+                folder_path = f"{self.lon}_{self.lat}_{self.scale}_{self.goal}"
+            self.filepath = f"riskMaps/{folder_path}"
+
             try:
-                os.makedirs(f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}", exist_ok=True)  
+                os.makedirs(self.filepath, exist_ok=True)  
             except OSError as error: 
                 print(error)  
-            self.filepath = f"riskMaps/{self.lat}_{self.lon}_{self.scale}_{self.goal}"
             self.generateCSV(df=df)
             df_intermediate = copy.deepcopy(self.loaded_df)
             self.loaded_df = None
@@ -267,8 +279,9 @@ def main():
     dataset.load_pirate_data(spread_of_danger=1)
     dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
     a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=(95, -5.5))
+    b = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset)
     a.toJSON()
-    b = MDP(JSON_file="riskMaps\(-12.5, 31.5)_(88.5, 153)_0.5\JSON.json")
+    # b = MDP(JSON_file="riskMaps\(-12.5, 31.5)_(88.5, 153)_0.5\JSON.json")
     print(b.stateToRisk(2001))
 
 if __name__ == "__main__":

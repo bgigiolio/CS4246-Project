@@ -2,29 +2,31 @@ from dataset import Dataset, read_dataset
 from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility
-from mdp import state_dict_to_P, save_result, read_result, is_valid_policy, value_iteration, policy_iteration, Q_learning, SARSA
-from mdp_toolbox_custom import ValueIteration, PolicyIteration, QLearning
+from mdp import *
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
 from functional_approximation_solving import Environement
 from pathRunner import runPath, coordToPolicy
+import numpy as np
 
 def main():
     ### CREATE DATASET ###
-    # ### SEA ###
+    ### SEA ###
     latitude = (-12.5, 31.5)
     longitude = (88.5, 153)
     scale = .5
     goal = (95, -5.5)
-    start = (105, 0)
+    start = (147.5, -2.5)
 
         # ### DEMO ###
-    # scale = 1
-    # longitude = (86, 90)
-    # latitude = (-12, -8)
-    # goal = (88, -10)
-    # start = (86, -12)
+    # scale = .5
+    # longitude = (90, 110)
+    # latitude = (-12, 10)
+    # start = (99.5, 4)
+    # goal = (96, -5)
+
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}"
 
     if False:
         dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
@@ -33,39 +35,55 @@ def main():
         dataset.set_start_goal_generate_distance(start=start, goal=goal)
         # dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        dataset.save("dataset_1")
+        dataset.save(DIR_NAME)
     else:
-        dataset=read_dataset("dataset_1")
+        dataset=read_dataset(DIR_NAME)
 
-    if True:
+    #print(dataset.states[(100, -1)])
+
+    #return
+
+    if False:
         ###CREATE RISK TABLE ###
 
-        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal)
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=None, folder_path=DIR_NAME)
         #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
+    
+    else:
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=goal, folder_path=DIR_NAME, read_file=True)
 
-    if True: 
+    goal_state = a.coordToIndex[goal[0]][goal[1]]
+    print(goal_state)
+
+    #return
+
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
+
         """
         P is A x S matrix, where P[a][s] is state obtained from performing action a in state s
         R(s,a) is reward obtained from performing action a from state s
         """
-        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, f"mdp_params/{longitude}_{latitude}_{scale}/")
-        R=-R #CHANGED SIGN HERE
+        P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, DIR_NAME)
         print(P, R)
+    else:
+        P, R = read_mdp_params(DIR_NAME)
+        print(P, R)
+    
+    #return
 
-        goal_state = a.coordToIndex[goal[0]][goal[1]]
-
+    if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA
-        label = "VI"
+        label = "SARSA"
         ## VALUE ITERATION
         match label:
             case "VI":
-                V, policy = value_iteration(P, R)
+                V, policy, Q_values_lst = value_iteration(P, R)
                 label = "VI"
             case "PI":
                 V, policy = policy_iteration(P, R)
@@ -74,24 +92,29 @@ def main():
                 V, policy = Q_learning(P, R, terminal_state=goal_state)
                 label = "QL"
             case "SARSA":
-                V, policy = SARSA(P, R, terminal_state=goal_state)
+                V, policy = SARSA(P, R, terminal_state=goal_state, num_episodes=5000)
                 label = "SARSA"
+            case "DQN":
+                V, policy = DQN(P, R, terminal_state=goal_state)
+                label = "DQN"
 
-        save_result(policy, V, f"results/{longitude}_{latitude}_{scale}_{label}/")
+        save_result(policy, V, label, DIR_NAME)
     else:
         label = "VI"
-        V, policy = read_result(f"results/{longitude}_{latitude}_{scale}_{label}")
+        V, policy = read_result(label, DIR_NAME)
 
-    print(policy)
-    print(is_valid_policy(policy, a.indexToCoord, dataset.states)) 
+    policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
+    #print(np.array_equal(policy, policy_new))
 
-    if True:
+    #return
+
+    if False:
         ### EVALUATE POLICY ###
         coordToPolicy(a.indexToCoord, policy)
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
         evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
         print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.indexToCoord, policy) #{coord:action} produces
+        coordToPolicy(a.indexToCoord, policy)
 
     if False: #example on how to do the functional approximation, verified and working
         environment=Environement("dataset_1")
@@ -101,7 +124,7 @@ def main():
         policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if True:
+    if False:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
@@ -117,7 +140,7 @@ def main():
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
-        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy_adj, granularity=scale)
         map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 

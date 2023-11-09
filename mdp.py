@@ -6,6 +6,12 @@ import json
 import os
 import tqdm
 import math
+import random
+from collections import deque 
+from keras.models import Sequential
+from keras.layers import Dense, Input
+from keras.optimizers import Adam
+from keras.losses import MeanSquaredError
 
 """
 Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
@@ -84,12 +90,14 @@ def generate_P_R_matrix(grid, actions):
 P is NOT probability matrix, it is transition matrix
 P[i][j] is the result state of taking aciton i from state j
 """  
-def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, folder_path: str = None):
+def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, states: dict, actions: dict, goal_state, folder_path: str = None):
     A_count = len(actions)
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    penalty_for_not_moving = -1e8
+    goal_reward = 1000
+    penalty_for_moving = -1
+    penalty_for_not_moving = -10000
 
     # print(states)
     # print()
@@ -105,39 +113,47 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
-            try:
-                #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
-                R[curr_state][action] = states[neighbour[0]]['to_goal']
-            except:
-                R[curr_state][action] = penalty_for_not_moving
+
+            #R[curr_state][action] = float(index_to_reward_func(neighbour_state))
+            #R[curr_state][action] = -states[neighbour[0]]['to_goal']
+            if (neighbour_state == goal_state):
+                R[curr_state][action] = goal_reward + penalty_for_moving
+            else:
+                R[curr_state][action] = penalty_for_moving - float(index_to_reward_func(neighbour_state))
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
-            #R[curr_state][remaining_action] = penalty_for_not_moving
-            R[curr_state][remaining_action] = states[coord]['to_goal']
+            R[curr_state][remaining_action] = penalty_for_not_moving
+            #R[curr_state][remaining_action] = states[coord]['to_goal']
             #print(curr_state, remaining_action)
 
     
     if (folder_path):
         try:  
-            os.makedirs(folder_path, exist_ok=True)  
+            os.makedirs(f"mdp_params/{folder_path}", exist_ok=True)  
         except OSError as error: 
             print(error) 
 
-        with open(folder_path + "JSON.json", "w+") as f:
+        with open(f"mdp_params/{folder_path}/JSON.json", "w+") as f:
             json.dump({"P": P.tolist(), "R": R.tolist()}, f)
 
     return P.astype(int), R.astype(float)
 
-import numpy as np
+def read_mdp_params(folder_path):
+    with open(f'mdp_params/{folder_path}/JSON.json') as f:
+        d = json.load(f)
+        P = np.asarray(d["P"], dtype=np.int64)
+        R = np.asarray(d["R"], dtype=np.float64)
+
+    return P, R
 
 CONST_GAMMA = 0.95
-CONST_EPSILON = 1e-11
-CONST_THETA = 1e-11
+CONST_EPSILON = 1e-16
+CONST_THETA = 1e-16
 CONST_MAX_ITER = 10000
 CONST_ALPHA = 0.05
 CONST_EPSILON_GREEDY = 0.1
-CONST_EPISODES = 100000
+CONST_EPISODES = 1000
 
 def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
     num_actions = len(transitions)
@@ -158,14 +174,14 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
         #print()
     
     # Extract the optimal policy
+    Q_values_lst = []
     policy = np.zeros(num_states, dtype=int)
     for s in range(num_states):
         Q_values = [1 * (rewards[s][a] + gamma * V[transitions[a][s]]) for a in range(num_actions)]
         policy[s] = np.argmax(Q_values)
+        Q_values_lst.append(list(Q_values))
     
-    return V, policy
-
-import numpy as np
+    return V, policy, Q_values_lst
 
 def policy_evaluation(policy, transitions, rewards, gamma = CONST_GAMMA, theta = CONST_THETA):
     num_states = len(rewards)
@@ -257,8 +273,8 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
                 break
         #print()
-        if (delta < epsilon):
-            break
+        # if (delta < epsilon):
+        #     break
 
     V = np.zeros(num_states)
     policy = np.zeros(num_states, dtype=int)
@@ -269,12 +285,12 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
     return V, policy
 
 def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
-    num_states = len(transitions)
-    num_actions = len(transitions[0])
+    num_actions = len(transitions)
+    num_states = len(rewards)
 
     Q = np.zeros((num_states, num_actions))
 
-    for episode in range(num_episodes):
+    for episode in tqdm.tqdm(range(num_episodes)):
         delta = 0
         s = np.random.randint(0, num_states) 
 
@@ -300,8 +316,8 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
                 break
-        if (delta < epsilon):
-            break
+        # if (delta < epsilon):
+        #     break
 
     V = np.zeros(num_states)
     policy = np.zeros(num_states, dtype=int)
@@ -311,17 +327,116 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
 
     return V, policy
 
-def save_result(policy: np.ndarray, V: np.ndarray, folder_path: str):
-    try:  
-        os.makedirs(folder_path, exist_ok=True)  
+class DQNAgent:
+    def __init__(self, state_size, action_size, transition_matrix, reward_func, gamma=0.95):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = deque(maxlen=2000)
+        self.gamma = gamma  # Discount factor
+        self.epsilon = 1.0  # Exploration rate
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.transition_matrix = transition_matrix
+        self.reward_func = reward_func
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = Sequential()
+        model.add(Dense(24, input_dim=self.state_size, activation='relu', input_shape=[1]))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size, activation='linear'))
+        model.compile(optimizer=Adam(), loss='mean_squared_error')
+        return model
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        if np.random.rand() <= self.epsilon:
+            return np.random.randint(self.action_size)
+        q_values = self.model.predict(np.array([state]))[0]
+        return np.argmax(q_values)
+
+    def replay(self, batch_size):
+        minibatch = random.sample(self.memory, batch_size)
+        for state, action, reward, next_state, done in minibatch:
+            print(state, action, reward, next_state, done)
+            target = reward
+            if not done:
+                target = reward + self.gamma * np.amax(self.model.predict(np.array([next_state]), verbose = 0)[0])
+            target_f = self.model.predict(np.array([state]), verbose = 0)
+            target_f[0][action] = target
+            self.model.fit(np.array([state]), target_f, epochs=1, verbose = 0)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def simulate_environment(self, state, action, terminal_state):
+        # Simulate environment using transition matrix and reward function
+        next_state = self.transition_matrix[action][state]
+        reward = self.reward_func[state][action]
+        done = next_state == terminal_state
+
+        return next_state, reward, done
+
+def get_optimal_policy(agent, num_states):
+    optimal_policy = []
+    for state in range(num_states):
+        q_values = agent.model.predict(np.reshape(state, [1, num_states]))[0]
+        action = np.argmax(q_values)
+        optimal_policy.append(action)
+
+    return optimal_policy
+
+def DQN(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA):
+    num_actions = len(transitions)
+    num_states = len(rewards)
+
+    agent = DQNAgent(num_states, num_actions, transitions, rewards, gamma)
+
+# Training loop
+    EPISODES = 1000  # Number of episodes
+    BATCH_SIZE = 32
+
+    for episode in tqdm.tqdm(range(EPISODES), "Episode"):
+        state = 0  # Assuming initial state is 0
+        done = False
+        total_reward = 0
+        
+        while not done:
+            # Take an action using epsilon-greedy policy
+            action = agent.act(state)
+            
+            # Simulate the environment based on the action
+            next_state, reward, done = agent.simulate_environment(state, action, terminal_state)
+            
+            # Store the experience in the agent's memory
+            agent.remember(state, action, reward, next_state, done)
+            
+            total_reward += reward
+            state = next_state
+            
+            if len(agent.memory) > BATCH_SIZE:
+                # Train the agent by replaying experiences
+                agent.replay(BATCH_SIZE)
+                print(agent.memory)
+        
+        # Decay exploration rate
+        if agent.epsilon > agent.epsilon_min:
+            agent.epsilon *= agent.epsilon_decay
+    
+    #return get_optimal_policy(agent, num_states)
+
+def save_result(policy: np.ndarray, V: np.ndarray, label:str, folder_path: str):
+    try:
+        os.makedirs(f"results/{folder_path}_{label}", exist_ok=True)  
     except OSError as error: 
         print(error)
 
-    with open(folder_path + "JSON.json", "w+") as f:
+    with open(f"results/{folder_path}_{label}/JSON.json", "w+") as f:
         json.dump({"policy": policy.tolist(), "utility": V.tolist(), "iter": len(V)}, f)
 
-def read_result(folder_path):
-    with open(f'{folder_path}/JSON.json') as f:
+def read_result(label, folder_path):
+    with open(f'results/{folder_path}_{label}/JSON.json') as f:
         d = json.load(f)
         policy = np.asarray(d["policy"], dtype=np.int64)
         V = np.asarray(d["utility"], dtype=np.float64)
@@ -342,6 +457,46 @@ def is_valid_policy(policy, index_to_coord_map, states):
             invalid_coords.append(coord)
 
     return invalid_coords
+
+def fix_policy(policy, start, goal, coord_to_index_map, index_to_coord_map, states, Q_values_lst = None):
+    visited_states = {}
+    start_state = coord_to_index_map[start[0]][start[1]]
+    goal_state = coord_to_index_map[goal[0]][goal[1]]
+    curr_state = start_state
+    policy_new = np.copy(policy)
+
+    while curr_state != goal_state:
+        proposed_action = policy_new[curr_state]
+        curr_coord = index_to_coord_map[curr_state]
+        neighbour_lst = [neighbour[0] for neighbour in states[curr_coord]['neighbours']]
+        neighbour_action_lst = [neighbour[1] for neighbour in states[curr_coord]['neighbours']]
+        dest_coord = neighbour_lst[neighbour_action_lst.index(proposed_action)]
+        dest_state = coord_to_index_map[dest_coord[0]][dest_coord[1]]
+
+        if (dest_state in visited_states):
+            print(neighbour_lst, neighbour_action_lst, proposed_action)
+
+            neighbour_action_lst.remove(proposed_action)
+            neighbour_lst.remove(dest_coord)
+            if (Q_values_lst != None):
+                Q_values_lst[dest_state][proposed_action] = -math.inf
+                new_action = np.argmax(Q_values_lst[dest_state])
+                #print(Q_values_lst[dest_state])
+            else:
+                new_action = random.choice(neighbour_action_lst)
+
+            dest_coord = neighbour_lst[neighbour_action_lst.index(new_action)]
+            print(new_action, dest_coord)
+            dest_state = coord_to_index_map[dest_coord[0]][dest_coord[1]]
+
+            policy_new[curr_state] = new_action
+        
+        curr_state = dest_state
+        visited_states[dest_state] = True
+
+        print(index_to_coord_map[curr_state])
+    
+    return policy_new
 
 
 def main():

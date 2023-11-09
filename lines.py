@@ -11,8 +11,7 @@ map.drawcoastlines()
 
 def moveState(curr_state: tuple[float, float], action: int, granularity: float):
     new_state = curr_state
-    print(action)
-    #actions = {0: "right", 1: "up", 2: "left", 3: "down"}
+    # print(action)
     if action == 0:
         new_state = (curr_state[0] + granularity, curr_state[1])    
     elif action == 1:
@@ -23,13 +22,13 @@ def moveState(curr_state: tuple[float, float], action: int, granularity: float):
         new_state = (curr_state[0], curr_state[1] - granularity)
     else:
         raise NotImplementedError("invalid action argument " +  str(action))
-    print(new_state)
+    # print(new_state)
     return new_state
         
 
 def plotActionsList(map: Basemap, start: tuple[float, float], actions: list[int] = [], granularity: float = 0.5):
-    print(len(actions))
-    print(granularity)
+    # print(len(actions))
+    # print(granularity)
 
     prevPoint = start
     for i in actions:
@@ -41,16 +40,16 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
                  policyFunction: list[int] = [], coords: dict[int, tuple[float, float]] = {},  granularity: float = 0.5):
     num_policy = len(policyFunction)
     num_states = len(coords)
-    print(num_policy)
-    print(num_states)
-    print(granularity)
+    # print(num_policy)
+    # print(num_states)
+    # print(granularity)
 
     coords_to_index = {(j[0], j[1]) : i for i, j in coords.items()}
-    print(coords_to_index)
+    # print(coords_to_index)
     prevPoint = start
     for i in range(num_states):
-        print(end)
-        if prevPoint == end or prevPoint not in coords_to_index: #makes it break if it attempt to go out of bounds, added
+        # print(end)
+        if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
         action = policyFunction[int(curr_index)]
@@ -59,8 +58,8 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
         prevPoint = start
 
 def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[int, tuple[float,float]] = {}, size: float=100):
-    print(len(value_policy))
-    print(len(index_to_coords))
+    # print(len(value_policy))
+    # print(len(index_to_coords))
 
     value_dict = {}
 
@@ -72,7 +71,7 @@ def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[in
     min_value = min(values)
 
     for k, v in value_dict.items():
-        coord = index_to_coords[k]
+        coord = index_to_coords[int(k)]
         curr_alpha = 0
         curr_color = "b"
         if v >=0:
