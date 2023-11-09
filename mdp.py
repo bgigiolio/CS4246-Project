@@ -153,7 +153,7 @@ CONST_THETA = 1e-16
 CONST_MAX_ITER = 10000
 CONST_ALPHA = 0.05
 CONST_EPSILON_GREEDY = 0.1
-CONST_EPISODES = 10000
+CONST_EPISODES = 1000
 
 def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
     num_actions = len(transitions)
