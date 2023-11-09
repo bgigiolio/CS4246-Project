@@ -9,7 +9,7 @@ import math
 import random
 from collections import deque 
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Input
 from keras.optimizers import Adam
 from keras.losses import MeanSquaredError
 
@@ -328,7 +328,7 @@ def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha =
     return V, policy
 
 class DQNAgent:
-    def __init__(self, state_size, action_size, gamma):
+    def __init__(self, state_size, action_size, transition_matrix, reward_func, gamma=0.95):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
@@ -336,14 +336,16 @@ class DQNAgent:
         self.epsilon = 1.0  # Exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
+        self.transition_matrix = transition_matrix
+        self.reward_func = reward_func
         self.model = self._build_model()
 
     def _build_model(self):
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, input_dim=self.state_size, activation='relu', input_shape=[1]))
         model.add(Dense(24, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(optimizer=Adam(), loss=MeanSquaredError())
+        model.compile(optimizer=Adam(), loss='mean_squared_error')
         return model
 
     def remember(self, state, action, reward, next_state, done):
@@ -352,56 +354,77 @@ class DQNAgent:
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return np.random.randint(self.action_size)
-        q_values = self.model.predict(state)
-        return np.argmax(q_values[0])
+        q_values = self.model.predict(np.array([state]))[0]
+        return np.argmax(q_values)
 
     def replay(self, batch_size):
-        minibatch = np.array(random.sample(self.memory, batch_size))
+        minibatch = random.sample(self.memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
+            print(state, action, reward, next_state, done)
             target = reward
             if not done:
-                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
-            target_f = self.model.predict(state)
+                target = reward + self.gamma * np.amax(self.model.predict(np.array([next_state]), verbose = 0)[0])
+            target_f = self.model.predict(np.array([state]), verbose = 0)
             target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
+            self.model.fit(np.array([state]), target_f, epochs=1, verbose = 0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-# def DQN(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA):
-#     num_states = len(transitions)
-#     num_actions = len(transitions[0])
+    def simulate_environment(self, state, action, terminal_state):
+        # Simulate environment using transition matrix and reward function
+        next_state = self.transition_matrix[action][state]
+        reward = self.reward_func[state][action]
+        done = next_state == terminal_state
 
-#     agent = DQNAgent(num_states, num_actions, gamma)
-#     batch_size = 32
-#     num_episodes = 1000
+        return next_state, reward, done
 
-#     for episode in range(num_episodes):
-#         state = env.reset()
-#         state = np.reshape(state, [1, state_size])
-#         for t in range(500):
-#             # Render the environment (optional)
-#             env.render()
+def get_optimal_policy(agent, num_states):
+    optimal_policy = []
+    for state in range(num_states):
+        q_values = agent.model.predict(np.reshape(state, [1, num_states]))[0]
+        action = np.argmax(q_values)
+        optimal_policy.append(action)
 
-#             # Choose an action
-#             action = agent.act(state)
+    return optimal_policy
 
-#             # Perform the action
-#             next_state, reward, done, _ = env.step(action)
-#             next_state = np.reshape(next_state, [1, state_size])
+def DQN(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA):
+    num_actions = len(transitions)
+    num_states = len(rewards)
 
-#             # Remember the experience
-#             agent.remember(state, action, reward, next_state, done)
+    agent = DQNAgent(num_states, num_actions, transitions, rewards, gamma)
 
-#             # Update the state
-#             state = next_state
+# Training loop
+    EPISODES = 1000  # Number of episodes
+    BATCH_SIZE = 32
 
-#             # Check if episode is finished
-#             if done:
-#                 break
-
-#             # Train the agent
-#             if len(agent.memory) > batch_size:
-#                 agent.replay(batch_size)
+    for episode in tqdm.tqdm(range(EPISODES), "Episode"):
+        state = 0  # Assuming initial state is 0
+        done = False
+        total_reward = 0
+        
+        while not done:
+            # Take an action using epsilon-greedy policy
+            action = agent.act(state)
+            
+            # Simulate the environment based on the action
+            next_state, reward, done = agent.simulate_environment(state, action, terminal_state)
+            
+            # Store the experience in the agent's memory
+            agent.remember(state, action, reward, next_state, done)
+            
+            total_reward += reward
+            state = next_state
+            
+            if len(agent.memory) > BATCH_SIZE:
+                # Train the agent by replaying experiences
+                agent.replay(BATCH_SIZE)
+                print(agent.memory)
+        
+        # Decay exploration rate
+        if agent.epsilon > agent.epsilon_min:
+            agent.epsilon *= agent.epsilon_decay
+    
+    #return get_optimal_policy(agent, num_states)
 
 def save_result(policy: np.ndarray, V: np.ndarray, label:str, folder_path: str):
     try:

@@ -92,8 +92,11 @@ def main():
                 V, policy = Q_learning(P, R, terminal_state=goal_state)
                 label = "QL"
             case "SARSA":
-                V, policy = SARSA(P, R, terminal_state=goal_state)
+                V, policy = SARSA(P, R, terminal_state=goal_state, num_episodes=5000)
                 label = "SARSA"
+            case "DQN":
+                V, policy = DQN(P, R, terminal_state=goal_state)
+                label = "DQN"
 
         save_result(policy, V, label, DIR_NAME)
     else:
