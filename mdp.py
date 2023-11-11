@@ -23,7 +23,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     P = np.zeros((A_count, len(states)))
     R = np.zeros((len(states), A_count))
 
-    goal_reward = 1000
+    goal_reward = 500
     penalty_for_moving = -5
     penalty_for_not_moving = -10000
 
@@ -47,7 +47,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             if (neighbour_state == goal_state):
                 R[curr_state][action] = goal_reward + penalty_for_moving
             else:
-                R[curr_state][action] = penalty_for_moving - float(index_to_reward_func(neighbour_state))
+                R[curr_state][action] = penalty_for_moving + float(index_to_reward_func(neighbour_state))
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
@@ -179,6 +179,8 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA,
     Q = np.zeros((num_states, num_actions))
 
     goal_state_counter = 0
+    random_action_counter = 0
+    action_counter = 0
     timeout_counter = 0
     max_iter_counter = 0
 
@@ -191,11 +193,14 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA,
         for i in range(max_iter):
             if np.random.uniform(0, 1) < epsilon_greedy:
                 action = np.random.randint(0, num_actions)  # Random action
+                if (action != np.argmax(Q[s])):
+                    random_action_counter += 1
             else:
                 # action = np.argmax(Q[s])
                 exploration_values = Q[s] + exploration_param * np.sqrt(np.log(np.sum(action_counts[s])) / (1 + action_counts[s]))
                 action = np.argmax(exploration_values)
 
+            action_counter += 1
             # if  (transitions[action][s] in visited_states):
             #     flag = False
             #     arr = np.arange(num_actions)
@@ -258,6 +263,7 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA,
         policy[s] = np.argmax(Q[s])
 
     print(f"Goal State Counter: {goal_state_counter}")
+    print(f"Random Action Proportion: {random_action_counter/action_counter}")
     print(f"Timeout Counter: {timeout_counter}")
     print(f"Max Iter Counter: {max_iter_counter}")
     return V, policy
