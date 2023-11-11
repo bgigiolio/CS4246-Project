@@ -89,7 +89,10 @@ def main():
                 V, policy = policy_iteration(P, R)
                 label = "PI"
             case "QL":
-                V, policy = Q_learning(P, R, terminal_state=goal_state, num_episodes=2000)
+                V, policy = Q_learning(P, R, terminal_state=goal_state, 
+                                       num_episodes=10000, reduction_factor=1, 
+                                       epsilon_greedy=0.3, alpha=0.1,
+                                       timeout = 5)
                 label = "QL"
             case "SARSA":
                 V, policy = SARSA(P, R, terminal_state=goal_state, num_episodes=5000)

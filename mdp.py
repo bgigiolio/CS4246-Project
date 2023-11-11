@@ -24,7 +24,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     R = np.zeros((len(states), A_count))
 
     goal_reward = 1000
-    penalty_for_moving = -1
+    penalty_for_moving = -5
     penalty_for_not_moving = -10000
 
     # print(states)
@@ -79,9 +79,10 @@ CONST_GAMMA = 0.95
 CONST_EPSILON = 1e-16
 CONST_THETA = 1e-16
 CONST_MAX_ITER = 10000
-CONST_ALPHA = 0.15
-CONST_EPSILON_GREEDY = 0.2
+CONST_ALPHA = 0.01
+CONST_EPSILON_GREEDY = 0.01
 CONST_EPISODES = 1000
+CONST_TIEMOUT = 60
 
 def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
     num_actions = len(transitions)
@@ -166,30 +167,56 @@ def policy_iteration(transitions, rewards, gamma = CONST_GAMMA, max_iter = CONST
     
     return V, policy
 
-def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER, reduction_factor = 1.0001):
+def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, 
+               alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, 
+               num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER, reduction_factor = 1.0001,
+               exploration_param = 1, timeout = CONST_TIEMOUT):
     num_actions = len(transitions)
     num_states = len(rewards)
     max_iter = num_states * num_states
+    action_counts = np.zeros((num_states, num_actions))
 
     Q = np.zeros((num_states, num_actions))
+
+    goal_state_counter = 0
+    timeout_counter = 0
+    max_iter_counter = 0
 
     for _ in tqdm.tqdm(range(num_episodes)):
         delta = 0
         s = np.random.randint(0, num_states)
+        visited_states = {}
 
-        timeout = time() + 60
+        timeout_thres = time() + timeout
         for i in range(max_iter):
             if np.random.uniform(0, 1) < epsilon_greedy:
                 action = np.random.randint(0, num_actions)  # Random action
             else:
-                action = np.argmax(Q[s])
+                # action = np.argmax(Q[s])
+                exploration_values = Q[s] + exploration_param * np.sqrt(np.log(np.sum(action_counts[s])) / (1 + action_counts[s]))
+                action = np.argmax(exploration_values)
+
+            # if  (transitions[action][s] in visited_states):
+            #     flag = False
+            #     arr = np.arange(num_actions)
+            #     np.random.shuffle(arr)
+            #     for a in arr:
+            #         action = a
+            #         if  (not transitions[action][s] in visited_states):
+            #             flag = True
+            #             break
+            #     if (not flag):
+            #         #print(f"invalid action encountered {s}, continuing")
+            #         break
 
             next_state = transitions[action][s]
             reward = rewards[s][action]
+            visited_states[next_state] = True
 
             max_next_action = np.max(Q[next_state])
 
             Q[s][action] += alpha * (reward + gamma * max_next_action - Q[s][action])
+            action_counts[s][action] += 1
             delta = max(delta, np.abs(alpha * (reward + gamma * max_next_action - Q[s][action])))
 
             if (np.isnan(Q[s][action])):
@@ -201,12 +228,22 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
             s = next_state
 
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
+                goal_state_counter += 1
                 break
 
-            if (time() >= timeout):
+            if (time() >= timeout_thres):
+                #print(f"timeout encountered, breaking iter {i}...")
+                timeout_counter += 1
                 break
 
-        
+            if (i == max_iter - 1):
+                max_iter_counter += 1
+
+            # if (time() >= timeout - 55):
+            #     print(f"timeout encountered, {i} {s}...")
+            #     print(Q[s])
+            #     print(np.transpose(transitions)[s])              
+    
         alpha /= reduction_factor
         epsilon_greedy /= reduction_factor
 
@@ -220,6 +257,9 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
         V[s] = np.max(Q[s])
         policy[s] = np.argmax(Q[s])
 
+    print(f"Goal State Counter: {goal_state_counter}")
+    print(f"Timeout Counter: {timeout_counter}")
+    print(f"Max Iter Counter: {max_iter_counter}")
     return V, policy
 
 def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
