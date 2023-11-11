@@ -76,7 +76,7 @@ def main():
     
     #return
 
-    if True:
+    if False:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
         label = "QL"
@@ -151,7 +151,7 @@ def main():
         ### Display utility ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
-        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=1)
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
         plt.show()
 
 main()
