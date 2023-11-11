@@ -47,13 +47,25 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     coords_to_index = {(j[0], j[1]) : i for i, j in coords.items()}
     # print(coords_to_index)
     prevPoint = start
+    visited_states = {}
     for i in range(num_states):
         # print(end)
         if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
         action = policyFunction[int(curr_index)]
-        start = moveState(start, action, granularity)
+        try:
+            start = moveState(start, action, granularity)
+        except Exception as e:
+            print(str(e))
+            break
+
+        if (start in visited_states):
+            print(f"loop encountered at {start}")
+            break
+        else:
+            visited_states[start] = True
+
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
         prevPoint = start
 
