@@ -12,79 +12,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Input
 from keras.optimizers import Adam
 from keras.losses import MeanSquaredError
-
-"""
-Convert basemap to xy grid, with - denoting obstacle and each cell is the reward
-"""
-def lat_lon_matrix_to_grid(basemap, nx, ny, metadata=None):
-    lat_lon_grid = basemap.makegrid(nx, ny)
-    len_x = len(lat_lon_grid[0][0])
-    len_y = len(lat_lon_grid[0])
-
-    xy_to_lat_lon_map = {}
-    grid = [[0 for x in range(len_x)] for x in range(len_y)]
-    for i in range(len_y):
-        for j in range(len_x):
-            xy_to_lat_lon_map[(j, i)] = (lat_lon_grid[0][i][j], lat_lon_grid[1][i][j])
-            xpt, ypt = basemap(lat_lon_grid[0][i][j], lat_lon_grid[1][i][j])
-            if (basemap.is_land(xpt, ypt)):
-                grid[i][j] = '-'
-            else:
-                grid[i][j] = '0'
-    
-    return (grid, xy_to_lat_lon_map)
-
-"""
-:param _grid: denote obstacles with -, otherwise denote with reward
-:param actions: array of (intended action in displacement tuple, 3x3 array starting at (1,1) probability of reaching each of the 8 surrounding cells)
-:param reward_grid: xy array of rewards of each location
-"""
-def generate_P_R_matrix(grid, actions):    
-    len_x = len(grid[0])
-    len_y = len(grid)
-
-    A_count = len(actions)
-
-    state_to_coord_map = {}
-    state_to_reward = {}
-    coord_to_state_map = {}
-    state_counter = 0
-
-    for i in range(len_y):
-        for j in range(len_x):
-            if (grid[i][j] != "-"):
-                state_to_coord_map[state_counter] = (j, i)
-                coord_to_state_map[(j, i)] = state_counter
-                state_to_reward[state_counter] = grid[i][j]
-                state_counter += 1
-
-    P = [[[0 for x in range(state_counter)] for y in range(state_counter)] for z in range(A_count)]
-    R = [[0 for x in range(state_counter)] for y in range(A_count)]
-
-    for a in range(A_count):
-        for s in range(state_counter):
-            action_grid = actions[a][1]
-            current_state = s
-            current_coord = state_to_coord_map[s]
-
-            for i in range(len(action_grid)):
-                for j in range(len(action_grid[0])):
-                    d_x, d_y = j - 1, i - 1
-                    target_x, target_y = d_x + current_coord[0], d_y + current_coord[1]
-
-                    # circular array behaviour
-                    target_x %= len_x
-                    target_y %= len_y
-
-                    target_state = current_state
-                    if ((target_x, target_y) in coord_to_state_map):
-                        target_state = coord_to_state_map[(target_x, target_y)]
-
-                    P[a][current_state][target_state] += action_grid[i][j]
-                    if (d_x == actions[a][0][0] and d_y == actions[a][0][1]):
-                        R[a][current_state] = state_to_reward[target_state]
-        
-    return (np.asarray(P), np.transpose(np.asarray(R)))
+from time import time
 
 """
 P is NOT probability matrix, it is transition matrix
@@ -96,7 +24,7 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
     R = np.zeros((len(states), A_count))
 
     goal_reward = 1000
-    penalty_for_moving = -1
+    penalty_for_moving = -5
     penalty_for_not_moving = -10000
 
     # print(states)
@@ -151,9 +79,10 @@ CONST_GAMMA = 0.95
 CONST_EPSILON = 1e-16
 CONST_THETA = 1e-16
 CONST_MAX_ITER = 10000
-CONST_ALPHA = 0.05
-CONST_EPSILON_GREEDY = 0.1
+CONST_ALPHA = 0.01
+CONST_EPSILON_GREEDY = 0.01
 CONST_EPISODES = 1000
+CONST_TIEMOUT = 60
 
 def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_EPSILON, max_iter = CONST_MAX_ITER):
     num_actions = len(transitions)
@@ -238,28 +167,56 @@ def policy_iteration(transitions, rewards, gamma = CONST_GAMMA, max_iter = CONST
     
     return V, policy
 
-def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
+def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, 
+               alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, 
+               num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER, reduction_factor = 1.0001,
+               exploration_param = 1, timeout = CONST_TIEMOUT):
     num_actions = len(transitions)
     num_states = len(rewards)
+    max_iter = num_states * num_states
+    action_counts = np.zeros((num_states, num_actions))
 
     Q = np.zeros((num_states, num_actions))
+
+    goal_state_counter = 0
+    timeout_counter = 0
+    max_iter_counter = 0
 
     for _ in tqdm.tqdm(range(num_episodes)):
         delta = 0
         s = np.random.randint(0, num_states)
+        visited_states = {}
 
+        timeout_thres = time() + timeout
         for i in range(max_iter):
             if np.random.uniform(0, 1) < epsilon_greedy:
                 action = np.random.randint(0, num_actions)  # Random action
             else:
-                action = np.argmax(Q[s])
+                # action = np.argmax(Q[s])
+                exploration_values = Q[s] + exploration_param * np.sqrt(np.log(np.sum(action_counts[s])) / (1 + action_counts[s]))
+                action = np.argmax(exploration_values)
+
+            # if  (transitions[action][s] in visited_states):
+            #     flag = False
+            #     arr = np.arange(num_actions)
+            #     np.random.shuffle(arr)
+            #     for a in arr:
+            #         action = a
+            #         if  (not transitions[action][s] in visited_states):
+            #             flag = True
+            #             break
+            #     if (not flag):
+            #         #print(f"invalid action encountered {s}, continuing")
+            #         break
 
             next_state = transitions[action][s]
             reward = rewards[s][action]
+            visited_states[next_state] = True
 
             max_next_action = np.max(Q[next_state])
 
             Q[s][action] += alpha * (reward + gamma * max_next_action - Q[s][action])
+            action_counts[s][action] += 1
             delta = max(delta, np.abs(alpha * (reward + gamma * max_next_action - Q[s][action])))
 
             if (np.isnan(Q[s][action])):
@@ -271,7 +228,25 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
             s = next_state
 
             if next_state == terminal_state:  # terminal_state is the state where the episode ends
+                goal_state_counter += 1
                 break
+
+            if (time() >= timeout_thres):
+                #print(f"timeout encountered, breaking iter {i}...")
+                timeout_counter += 1
+                break
+
+            if (i == max_iter - 1):
+                max_iter_counter += 1
+
+            # if (time() >= timeout - 55):
+            #     print(f"timeout encountered, {i} {s}...")
+            #     print(Q[s])
+            #     print(np.transpose(transitions)[s])              
+    
+        alpha /= reduction_factor
+        epsilon_greedy /= reduction_factor
+
         #print()
         # if (delta < epsilon):
         #     break
@@ -282,6 +257,9 @@ def Q_learning(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, al
         V[s] = np.max(Q[s])
         policy[s] = np.argmax(Q[s])
 
+    print(f"Goal State Counter: {goal_state_counter}")
+    print(f"Timeout Counter: {timeout_counter}")
+    print(f"Max Iter Counter: {max_iter_counter}")
     return V, policy
 
 def SARSA(transitions, rewards, terminal_state = 0, gamma = CONST_GAMMA, alpha = CONST_ALPHA, epsilon = CONST_EPSILON, epsilon_greedy = CONST_EPSILON_GREEDY, num_episodes = CONST_EPISODES, max_iter = CONST_MAX_ITER):
@@ -499,24 +477,24 @@ def fix_policy(policy, start, goal, coord_to_index_map, index_to_coord_map, stat
     return policy_new
 
 
-def main():
-    grid = np.array([[0.1,0.2],[0.3,0.4]])
-    actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
-    P,R = generate_P_R_matrix(grid, actions)
+# def main():
+#     grid = np.array([[0.1,0.2],[0.3,0.4]])
+#     actions = [((0,-1), [[0,1,0],[0,0,0],[0,0,0]]), ((1,0), [[0,0,0],[0,0,1],[0,0,0]])]
+#     P,R = generate_P_R_matrix(grid, actions)
 
-    neg_reward = -1000
+#     neg_reward = -1000
 
-    P = np.array([[2, 3, 2, 3], [1, 1, 3, 3]])
-    R = np.array([[0.1, 0.1], [10, neg_reward], [neg_reward, 10], [neg_reward, neg_reward]])
+#     P = np.array([[2, 3, 2, 3], [1, 1, 3, 3]])
+#     R = np.array([[0.1, 0.1], [10, neg_reward], [neg_reward, 10], [neg_reward, neg_reward]])
 
-    print(P)
-    print(R)
-    # vi = mdp.FiniteHorizon(P, R, 0.95, 5)
-    # vi.run()
-    # print(vi.policy)
+#     print(P)
+#     print(R)
+#     # vi = mdp.FiniteHorizon(P, R, 0.95, 5)
+#     # vi.run()
+#     # print(vi.policy)
 
-    V, policy = Q_learning(P, R, terminal_state=3)
-    print(V, policy)
+#     V, policy = Q_learning(P, R, terminal_state=3)
+#     print(V, policy)
 
-if __name__=='__main__':
-    main()
+# if __name__=='__main__':
+#     main()

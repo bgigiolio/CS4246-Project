@@ -11,16 +11,17 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
         pathState.append(currState)
         path.append(curr)
         if currState in history:
-            print("Coords:")
-            print(path)
-            print("States:")
-            print(pathState)
-            c = 0
-            print("Path Followed: ")
-            for state in pathState:
-                print(f"{path[c]}: {actions[policy[state]]}")
-                c += 1
-            raise Exception("Path caught in loop!")
+            # print("Coords:")
+            # print(path)
+            # print("States:")
+            # print(pathState)
+            # c = 0
+            # print("Path Followed: ")
+            # for state in pathState:
+            #     print(f"{path[c]}: {actions[policy[state]]}")
+            #     c += 1
+            # raise Exception("Path caught in loop!")
+            return{"path": path, "pathState": pathState, "distance": distance}
         history.append(currState)
         if policy[currState] == 0:
             curr = (curr[0]+ scale, curr[1])
