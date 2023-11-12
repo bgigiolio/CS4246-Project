@@ -38,7 +38,11 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
         
         for neighbour in neighbour_lst:
             action = neighbour[1]
-            neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
+            try:
+                neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
+            except:
+                neighbour_state = curr_state
+                
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
 
@@ -47,10 +51,16 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
             if (neighbour_state == goal_state):
                 R[curr_state][action] = goal_reward + penalty_for_moving
             else:
+                # if (neighbour[0][0] >= 103.5 and neighbour[0][0] <= 115.4 and neighbour[0][1] >= -7.4 and neighbour[0][1] <= -0.4):
+                #     R[curr_state][action] = -100000000
+                # else:
                 R[curr_state][action] = penalty_for_moving + float(index_to_reward_func(neighbour_state))
 
         for remaining_action in action_set:
             P[remaining_action][curr_state] = curr_state # set invalid actions to result back to current state
+            # if (coord[0] >= 103.5 and coord[0] <= 115.4 and coord[1] >= -7.4 and coord[1] <= -0.4):
+            #     R[curr_state][action] = -100000000
+            # else:
             R[curr_state][remaining_action] = penalty_for_not_moving
             #R[curr_state][remaining_action] = states[coord]['to_goal']
             #print(curr_state, remaining_action)
