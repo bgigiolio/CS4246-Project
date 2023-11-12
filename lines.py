@@ -1,5 +1,6 @@
 from __future__ import annotations
 from mpl_toolkits.basemap import Basemap
+import math
 import matplotlib.pyplot as plt
 import json
 
@@ -43,6 +44,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     # print(num_policy)
     # print(num_states)
     # print(granularity)
+    origin = start
 
     coords_to_index = {(j[0], j[1]) : i for i, j in coords.items()}
     # print(coords_to_index)
@@ -68,6 +70,48 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
 
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
         prevPoint = start
+
+    map.scatter(origin[0], origin[1], s=9, label="start", alpha=1)
+    map.scatter(end[0], end[1], s=9, label="goal", alpha=1)
+
+def maplgDanger(map: Basemap, dataset, size=1):
+    danger = {}
+    max_danger = 0
+
+    states = dataset.states
+    for i, j in states.items():
+        coord = (i[0], i[1])
+        curr_danger = j["danger"]
+        if curr_danger:
+            curr_danger = math.log(curr_danger)
+            if curr_danger < 0:
+                curr_danger = 0
+            max_danger = max(max_danger, curr_danger)
+        danger[coord] = curr_danger
+
+    for i, j in danger.items():
+        coord = (i[0], i[1])
+        curr_alpha = j/max_danger
+
+        map.scatter(coord[0], coord[1], s=size, marker='s', color="r", latlon=True, alpha=curr_alpha)
+
+def mapDanger(map: Basemap, dataset, size=1):
+    danger = {}
+    max_danger = 0
+
+    states = dataset.states
+    for i, j in states.items():
+        coord = (i[0], i[1])
+        curr_danger = j["danger"]
+        max_danger = max(max_danger, curr_danger)
+        danger[coord] = curr_danger
+
+    for i, j in danger.items():
+        coord = (i[0], i[1])
+        curr_alpha = j/max_danger
+
+        map.scatter(coord[0], coord[1], s=size, marker='s', color="r", latlon=True, alpha=curr_alpha)
+
 
 def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[int, tuple[float,float]] = {}, size: float=100):
     # print(len(value_policy))
