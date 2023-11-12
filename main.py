@@ -1,5 +1,5 @@
 from dataset import Dataset, read_dataset
-from visualize_dataset import plot_dataset_on_map
+from visualize_dataset import plot_dataset_on_map, apply_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility
 from mdp import *
@@ -129,17 +129,17 @@ def main():
 
     if False:
         ### VISUALIZE DATASET ###
-        #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
-        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
+        plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
+        # plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended
 
 
         ### VISUALIZE POLICY ###
-        dataset_solved=read_dataset("functional_approximation_solved_demo")
-        plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
+        # dataset_solved=read_dataset("functional_approximation_solved_demo")
+        # plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
 
         #the animation we discussed
     
-    if True:
+    if False:
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
@@ -152,6 +152,12 @@ def main():
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
         mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
+        plt.show()
+
+    if True:
+        ### Display line on danger map###
+        map = apply_dataset_on_map(dataset, Attribute="danger", Ranges=5)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
         plt.show()
 
 main()
