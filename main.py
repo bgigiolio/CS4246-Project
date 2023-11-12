@@ -85,11 +85,7 @@ def main():
 
     if False:
         ### SOLVE MDP using MDP toolbox ###
-<<<<<<< HEAD
-        ## label values: VI, PI, QL, SARSA
-=======
         ## label values: VI, PI, QL, SARSA, DQN
->>>>>>> 6cc145769310123c2e742df85c33ab828ca52d9c
         label = "VI"
         ## VALUE ITERATION
         match label:
