@@ -38,7 +38,11 @@ def state_dict_to_P(coord_to_index_map: dict, index_to_reward_func: callable, st
         
         for neighbour in neighbour_lst:
             action = neighbour[1]
-            neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
+            try:
+                neighbour_state = coord_to_index_map[neighbour[0][0]][neighbour[0][1]]
+            except:
+                neighbour_state = curr_state
+                
             P[action][curr_state] = neighbour_state
             action_set.remove(action)
 

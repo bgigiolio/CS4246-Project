@@ -162,11 +162,12 @@ class MDP:
             self.lon = lon
             # if data.min_lon != self.lon[0] or data.max_lon != self.lon[1] or data.min_lat != self.lat[0] or data.max_lat != self.lat[1]:
             #     raise Exception(f"Dataset and Parameters do not match: [PARAM] {self.lon}, {self.lat} != [Dataset] ({data.min_lon}, {data.max_lon}), ({data.min_lat}, {data.max_lat})")
-            for n in tqdm.tqdm(range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale)), desc="Generating Frame"):
+            for n in tqdm.tqdm(range(math.ceil(lon[0] / scale), math.floor(lon[1] / scale) + 1), desc="Generating Frame"):
                 longitude = round(n * scale, 4)
                 self.coordToIndex[longitude] = {}
-                for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale)):
+                for t in range(math.ceil(lat[0] / scale), math.floor(lat[1] / scale) + 1):
                     latitude = round(t * scale, 4)
+                
                     if (longitude, latitude) in data.states.keys():
                         self.indexToCoord[counter] = (longitude, latitude)
                         self.coordToIndex[longitude][latitude] = counter

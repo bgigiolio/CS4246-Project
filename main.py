@@ -12,12 +12,18 @@ import numpy as np
 
 def main():
     ### CREATE DATASET ###
-    ### SEA ###
+    ### SEA ###  ##scale 0.5##
     latitude = (-12.5, 31.5)
     longitude = (88.5, 153)
     scale = .5
-    goal = (95, -5.5)
-    start = (113, 12)
+    goal = (104.5, 1.5)
+    start = (146.5, -9.5)
+
+    # latitude = (-12.4, 31.4)
+    # longitude = (88.4, 153)
+    # scale = .2
+    # goal = (104.8, 1.4)
+    # start = (146.8, -10.0)
 
         # ### DEMO ###
     # scale = .5
@@ -41,7 +47,7 @@ def main():
 
     #print(dataset.states[(100, -1)])
 
-    #return
+    # return
 
     if False:
         ###CREATE RISK TABLE ###
@@ -56,10 +62,10 @@ def main():
 
     goal_state = a.coordToIndex[goal[0]][goal[1]]
     print(goal_state)
-
+    
     # return
 
-    if False: 
+    if True: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -76,10 +82,10 @@ def main():
     
     # return
 
-    if True:
+    if False:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
-        label = "QL"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -103,13 +109,13 @@ def main():
 
         save_result(policy, V, label, DIR_NAME)
     else:
-        label = "QL"
+        label = "VI"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
     #print(np.array_equal(policy, policy_new))
 
-    #return
+    # return
 
     if False:
         ### EVALUATE POLICY ###

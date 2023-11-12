@@ -46,7 +46,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
 
     coords_to_index = {(j[0], j[1]) : i for i, j in coords.items()}
     # print(coords_to_index)
-    prevPoint = start
+    prevPoint = (round(start[0], 1), round(start[1], 1))
     visited_states = {}
     for i in range(num_states):
         # print(end)
@@ -67,7 +67,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
             visited_states[start] = True
 
         map.plot([prevPoint[0], start[0]], [prevPoint[1], start[1]], color="b", latlon=True)
-        prevPoint = start
+        prevPoint = (round(start[0], 1), round(start[1], 1))
 
 def mapUtility(map: Basemap, value_policy: list[float], index_to_coords: dict[int, tuple[float,float]] = {}, size: float=100):
     # print(len(value_policy))
