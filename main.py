@@ -13,17 +13,17 @@ import numpy as np
 def main():
     ### CREATE DATASET ###
     ### SEA ###  ##scale 0.5##
-    latitude = (-12.5, 31.5)
-    longitude = (88.5, 153)
-    scale = .5
-    goal = (104.5, 1.5)
-    start = (146.5, -9.5)
+    # latitude = (-12.5, 31.5)
+    # longitude = (88.5, 153)
+    # scale = .5
+    # goal = (104.5, 1.5)
+    # start = (146.5, -9.5)
 
-    # latitude = (-12.4, 31.4)
-    # longitude = (88.4, 153)
-    # scale = .2
-    # goal = (104.8, 1.4)
-    # start = (146.8, -10.0)
+    latitude = (-12.4, 31.4)
+    longitude = (88.4, 153)
+    scale = .2
+    goal = (104.8, 1.4)
+    start = (146.8, -10.0)
 
         # ### DEMO ###
     # scale = .5
@@ -76,20 +76,21 @@ def main():
         """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, DIR_NAME)
         print(P, R)
+        print(R[13172])
     else:
         P, R = read_mdp_params(DIR_NAME)
         print(P, R)
     
     # return
 
-    if False:
+    if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
         label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
-                V, policy, Q_values_lst = value_iteration(P, R)
+                V, policy, Q_values_lst = value_iteration(P, R, epsilon=1e-8)
                 label = "VI"
             case "PI":
                 V, policy = policy_iteration(P, R)
@@ -98,7 +99,7 @@ def main():
                 V, policy = Q_learning(P, R, terminal_state=goal_state, 
                                        num_episodes=10000, reduction_factor=1.00001, 
                                        epsilon_greedy=0.2, alpha=0.3,
-                                       timeout = 5)
+                                       timeout = 10)
                 label = "QL"
             case "SARSA":
                 V, policy = SARSA(P, R, terminal_state=goal_state, num_episodes=5000)
@@ -150,7 +151,7 @@ def main():
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
-        map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
     if False:
