@@ -13,10 +13,10 @@ import numpy as np
 def main():
     ### CREATE DATASET ###
     ### SEA ###
-    latitude = (-12.5, 31.5)
-    longitude = (88.5, 153)
-    scale = .5
-    goal = (104.5, 1.5)
+    latitude = (-12.4, 31.4)
+    longitude = (88.4, 153)
+    scale = .2
+    goal = (104.8, 1.4)
     start = (147.0, -10.0)
 
         # ### DEMO ###
