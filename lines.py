@@ -14,13 +14,13 @@ def moveState(curr_state: tuple[float, float], action: int, granularity: float):
     new_state = curr_state
     # print(action)
     if action == 0:
-        new_state = (curr_state[0] + granularity, curr_state[1])    
+        new_state = (round(curr_state[0] + granularity,1), round(curr_state[1],1))    
     elif action == 1:
-        new_state = (curr_state[0] , curr_state[1] + granularity)
+        new_state = (round(curr_state[0],1) , round(curr_state[1] + granularity,1))
     elif action == 2:
-        new_state = (curr_state[0] - granularity, curr_state[1])
+        new_state = (round(curr_state[0] - granularity,1), round(curr_state[1],1))
     elif action == 3:
-        new_state = (curr_state[0], curr_state[1] - granularity)
+        new_state = (round(curr_state[0],1), round(curr_state[1] - granularity,1))
     else:
         raise NotImplementedError("invalid action argument " +  str(action))
     # print(new_state)
@@ -51,7 +51,7 @@ def plotActions(map: Basemap, start: tuple[float, float], end: tuple[float, floa
     prevPoint = start
     visited_states = {}
     for i in range(num_states):
-        # print(end)
+        # print(prevPoint)
         if prevPoint == end:
             break
         curr_index = coords_to_index[prevPoint]
