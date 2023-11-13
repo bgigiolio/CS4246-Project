@@ -65,7 +65,7 @@ def main():
     
     # return
 
-    if True: 
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -76,17 +76,16 @@ def main():
         """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, DIR_NAME)
         print(P, R)
-        print(R[13172])
     else:
         P, R = read_mdp_params(DIR_NAME)
         print(P, R)
     
     # return
 
-    if True:
+    if False:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
-        label = "VI"
+        label = "QL"
         ## VALUE ITERATION
         match label:
             case "VI":
@@ -97,8 +96,8 @@ def main():
                 label = "PI"
             case "QL":
                 V, policy = Q_learning(P, R, terminal_state=goal_state, 
-                                       num_episodes=10000, reduction_factor=1.00001, 
-                                       epsilon_greedy=0.2, alpha=0.3,
+                                       num_episodes=20000, reduction_factor=1, 
+                                       epsilon_greedy=0.3, alpha=0.4,
                                        timeout = 10)
                 label = "QL"
             case "SARSA":
@@ -110,7 +109,7 @@ def main():
 
         save_result(policy, V, label, DIR_NAME)
     else:
-        label = "VI"
+        label = "QL"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
