@@ -133,14 +133,14 @@ def main():
         policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if False:
+    if True:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
 
 
         ### VISUALIZE POLICY ###
-        dataset_solved=read_dataset("functional_approximation_solved_demo")
+        dataset_solved=read_dataset("functional_demo", "functional_approximation_solved_demo")
         plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
 
         #the animation we discussed
