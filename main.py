@@ -82,14 +82,14 @@ def main():
     
     # return
 
-    if False:
+    if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
-        label = "QL"
+        label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
-                V, policy, Q_values_lst = value_iteration(P, R, epsilon=1e-8)
+                V, policy = value_iteration(P, R, epsilon=1e-8)
                 label = "VI"
             case "PI":
                 V, policy = policy_iteration(P, R)
@@ -133,7 +133,7 @@ def main():
         policy=environment.generate_policy(seperate=True) #if not true 
         print(policy) #a coord:action policy as we discussed, ready to be printed
 
-    if True:
+    if False:
         ### VISUALIZE DATASET ###
         #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
