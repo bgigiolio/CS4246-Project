@@ -12,7 +12,6 @@ from buildRiskTable import riskCalcNeighborsGoal #to be updated with density
 #TODO - make it possible to use the not one-hot-encoding for solving globally. This requires generating the state, next state for that part on demand!
 #TODO - vary stuff in the algoritm, can it be made even better?
 #TODO - clear the buffer a bit?
-#TODO - allways return 
 
 class Environement:
     "class used for doing the deep RL, what action to take, the reward function calculation and so on. Fully based on the Chat-GPT solution but adopted to this case"
@@ -24,7 +23,7 @@ class Environement:
         self.replay_buffer = [] #what experiences to replay everytime
         self.target_network = None
         #not used currently
-        self.mdp=MDP(lon=(self.dataset.min_lon, self.dataset.max_lon), lat=(self.dataset.min_lat, self.dataset.max_lat), scale=self.dataset.scale, data=self.dataset, goal=self.dataset.goal)
+        #self.mdp=MDP(lon=(self.dataset.min_lon, self.dataset.max_lon), lat=(self.dataset.min_lat, self.dataset.max_lat), scale=self.dataset.scale, data=self.dataset, goal=self.dataset.goal)
 
         #print("coordToIndex", self.mdp.coordToIndex) #detta borde fungera, jag hade fel
 
@@ -36,7 +35,7 @@ class Environement:
         self.min_epsilon = 0.01
         self.learning_rate = 0.001
         self.loss_fn = keras.losses.mean_squared_error #MSE error metric
-        self.optimizer = keras.optimizers.Adam(lr=self.learning_rate)
+        self.optimizer = keras.optimizers.Adam(learning_rate=self.learning_rate)
         
     def set_model(self, model=None):
         "set the model, has to be a tensorflow model"
@@ -58,6 +57,9 @@ class Environement:
         if np.random.rand() < self.epsilon:
             action = np.random.randint(self.action_space_size) #take a random action from the action space size
         else:
+            print("")
+            print("")
+            print(len(state))
             q_values = self.model.predict(state[np.newaxis], verbose=0) #if not the random action take the action which is greedy according to the current state of the model
             action = np.argmax(q_values[0]) #np.newaxis increases the dimension by one
         return action
@@ -125,26 +127,28 @@ class Environement:
     def encode(self, state, one_hot_encoding=True):
         "makes a numpy array containing the information about the state used for the neural network"
         
-        if not one_hot_encoding: #the idea her is to find a rule based on the features of the state
+        if not one_hot_encoding:
             info_state=[]
             
-            neighbours=self.dataset.states[state]["neighbours"]
-            
-            #adding distance to goal, danger for the neighbouring states as a starting hypothesis, for every action
+            #adding the relative location to the goal as a vector because for similar points the same action is likely to be taken, especially at oceans!
+            (lon,lat)=state
+            (lon_goal, lat_goal)=self.dataset.goal
+            info_state.append(lon-lon_goal)
+            info_state.append(lat-lat_goal)
 
+            neighbours=self.dataset.states[state]["neighbours"]
+            #adding distance to goal, danger for the neighbouring states as a starting hypothesis, for every action
             for action in range(self.action_space_size):
                 next_state=None
                 for (close_state, index) in neighbours:
                     if index==action:
                         next_state=close_state
                         info_state.append(self.dataset.states[next_state]["danger"])
-                        info_state.append(self.dataset.states[next_state]["to_goal"])
-                if not next_state:
+                        info_state.append(self.dataset.states[next_state]["density"])
+                if not next_state: #there is no such neighbour
                     info_state.append(self.dataset.states[state]["danger"])
-                    info_state.append(self.dataset.states[state]["to_goal"])
-
-            self.state_info_size=len(info_state)
-            return np.array(info_state)
+                    info_state.append(self.dataset.states[state]["density"])
+                    #info_state.append(self.dataset.states[state]["to_goal"])
         
         else: #requires sampling the same space as the function approximation is tested on for this to work! hard
             info_state=[]
@@ -153,9 +157,10 @@ class Environement:
                     info_state.append(1)
                 else:
                     info_state.append(0)
-            self.state_info_size=len(info_state)
-            #print(self.state_info_size)
-            return np.array(info_state)
+        
+        self.state_info_size=len(info_state)
+        print(len(info_state))
+        return np.array(info_state)
 
 
     def run_episode(self, max_actions_to_take:int=100):
@@ -183,17 +188,17 @@ class Environement:
                 # Train Q-network - on everything we have seen
                 self._train_q_network()
 
-    def train(self, episodes_to_run:int=100):
+    def train(self, episodes_to_run:int=100, max_actions_per_episode=100):
         "fits the model by some episodes"
         for _ in tqdm.tqdm(range(episodes_to_run), desc="training the model by running some episodes"):
-            self.run_episode()
+            self.run_episode(max_actions_per_episode)
 
     def generate_policy_utility(self):
-        "to be done after training, returns a cord:action dictionary and a utility dictionary coord:value as well as add those attributes to the dictionary"
+        "to be done after training, returns a cord:action dictionary and a utility dictionary coord:value as well as add those attributes state dictionary of the dataset"
 
         policy={}
         utility={}
-        states=self.states
+        states=self.dataset.states
         for state in tqdm.tqdm(self.dataset.states.keys(), desc="calculating policy"):
             state_encoded=self.encode(state)
             q_values = self.model.predict(state_encoded[np.newaxis], verbose=0) #if not the random action take the action which is greedy according to the current state of the model
@@ -203,7 +208,7 @@ class Environement:
             policy[state]=action
             states[state]['action']=int(action)
             states[state]['utility']=float(util)
-        self.dataset.states=states
+        self.dataset.states=states #now updated with the solution in the dataset
         return policy, utility
 
 def main():

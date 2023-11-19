@@ -19,11 +19,19 @@ def main():
     # goal = (104.5, 1.5)
     # start = (146.5, -9.5)
 
-    latitude = (-12.4, 31.4)
-    longitude = (88.4, 153)
-    scale = .2
-    goal = (104.8, 1.4)
-    start = (146.8, -10.0)
+    #the case study in the presentation
+    #latitude = (-12.4, 31.4)
+    #longitude = (88.4, 153)
+    #scale = .2
+    #goal = (104.8, 1.4) #Singapore
+    #start = (146.8, -10.0) #New Guinea
+    
+    #a smaller scale problem Sulawei to Singapore
+    latitude=(-8,10)
+    longitude=(100,130)
+    scale = .5
+    goal = (105, 1.4) #approximatley Singapore
+    start=(1.6, 124.5) #Manado, an interesting starting place because Borneo is in the way so you can take two ways around 
 
         # ### DEMO ###
     # scale = .5
@@ -32,16 +40,16 @@ def main():
     # start = (99.5, 4)
     # goal = (96, -5)
 
-    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}_with_density"
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}" #everything with density added from now on
 
     if False:
-        #dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
-        #dataset.generate_states(distance=scale) #needs to be done first
-        #dataset.load_pirate_data(spread_of_danger=1)
-        #dataset.set_start_goal_generate_distance(start=start, goal=goal)
+        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        dataset.generate_states(distance=scale) #needs to be done first
+        dataset.load_pirate_data(spread_of_danger=1)
+        dataset.set_start_goal_generate_distance(start=start, goal=goal)
 
-        dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
-        dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST, VERY GOOD TO DO...
+        #dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
+        dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST
         #print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
         dataset.save(DIR_NAME)
     else:
@@ -63,8 +71,8 @@ def main():
     else:
         a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=None, folder_path=DIR_NAME, read_file=True)
 
-    goal_state = a.coordToIndex[goal[0]][goal[1]]
-    print(goal_state)
+        goal_state = a.coordToIndex[goal[0]][goal[1]]
+        print(goal_state)
     
     # return
 
@@ -85,7 +93,7 @@ def main():
     
     # return
 
-    if True:
+    if False:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
         label = "VI"
@@ -145,10 +153,10 @@ def main():
         #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
-    if False:
+    if True:
         ### VISUALIZE DATASET ###
-        #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
-        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
+        plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
+        plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
 
 
         ### VISUALIZE POLICY ###
