@@ -120,7 +120,7 @@ def value_iteration(transitions, rewards, gamma = CONST_GAMMA, epsilon = CONST_E
         policy[s] = np.argmax(Q_values)
         Q_values_lst.append(list(Q_values))
     
-    return V, policy, Q_values_lst
+    return V, policy
 
 def policy_evaluation(policy, transitions, rewards, gamma = CONST_GAMMA, theta = CONST_THETA):
     num_states = len(rewards)

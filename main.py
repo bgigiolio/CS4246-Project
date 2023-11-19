@@ -68,7 +68,7 @@ def main():
     
     # return
 
-    if True: 
+    if False: 
         #MDP pipeline
         ### TRANSLATE DATASET TO MDP ###
         actions = {0: "right", 1: "up", 2: "left", 3: "down"}
@@ -79,29 +79,28 @@ def main():
         """
         P, R = state_dict_to_P(a.coordToIndex, a.stateToRisk, dataset.states, actions, goal_state, DIR_NAME)
         print(P, R)
-        print(R[13172])
     else:
         P, R = read_mdp_params(DIR_NAME)
         print(P, R)
     
     # return
 
-    if False:
+    if True:
         ### SOLVE MDP using MDP toolbox ###
         ## label values: VI, PI, QL, SARSA, DQN
         label = "VI"
         ## VALUE ITERATION
         match label:
             case "VI":
-                V, policy, Q_values_lst = value_iteration(P, R, epsilon=1e-8)
+                V, policy = value_iteration(P, R, epsilon=1e-8)
                 label = "VI"
             case "PI":
                 V, policy = policy_iteration(P, R)
                 label = "PI"
             case "QL":
                 V, policy = Q_learning(P, R, terminal_state=goal_state, 
-                                       num_episodes=10000, reduction_factor=1.00001, 
-                                       epsilon_greedy=0.2, alpha=0.3,
+                                       num_episodes=20000, reduction_factor=1, 
+                                       epsilon_greedy=0.3, alpha=0.4,
                                        timeout = 10)
                 label = "QL"
             case "SARSA":
@@ -112,8 +111,8 @@ def main():
                 label = "DQN"
 
         save_result(policy, V, label, DIR_NAME)
-    elif False:
-        label = "VI"
+    else:
+        label = "QL"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
@@ -146,10 +145,10 @@ def main():
         #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
-    if True:
-        ### VISUALIZE DATASET - not that great for visualizing the entire region when 0.2 in scale ###
-        plot_dataset_on_map(dataset, Attribute="danger", Ranges=5, size=1, Legend=False) 
-        plot_dataset_on_map(dataset, Attribute="density", Ranges=5, size=1, Legend=True) #- working as intended 
+    if False:
+        ### VISUALIZE DATASET ###
+        #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
+        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
 
 
         ### VISUALIZE POLICY ###
