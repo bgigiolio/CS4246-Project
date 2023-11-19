@@ -32,27 +32,30 @@ def main():
     # start = (99.5, 4)
     # goal = (96, -5)
 
-    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}"
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}_with_density"
 
     if False:
-        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
-        dataset.generate_states(distance=scale) #needs to be done first
-        dataset.load_pirate_data(spread_of_danger=1)
-        dataset.set_start_goal_generate_distance(start=start, goal=goal)
-        # dataset.add_trafic_density(method="local_averege") 
-        print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
+        #dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        #dataset.generate_states(distance=scale) #needs to be done first
+        #dataset.load_pirate_data(spread_of_danger=1)
+        #dataset.set_start_goal_generate_distance(start=start, goal=goal)
+
+        dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
+        dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST, VERY GOOD TO DO...
+        #print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
         dataset.save(DIR_NAME)
     else:
         dataset=read_dataset(DIR_NAME)
+
 
     #print(dataset.states[(100, -1)])
 
     # return
 
-    if False:
+    if True:
         ###CREATE RISK TABLE ###
 
-        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=None, folder_path=DIR_NAME)
+        a = MDP(lat=latitude, lon=longitude, scale=scale, data=dataset, goal=None, folder_path=DIR_NAME) #EVERY TIME NEW DATA this MUST BE DONE
         #print(a.stateToRisk(10)) ### USE THIS TO GET RISK AT A STATE
         #print(a.indexToCoord)
         #print(a.coordToIndex)
@@ -85,11 +88,7 @@ def main():
 
     if False:
         ### SOLVE MDP using MDP toolbox ###
-<<<<<<< HEAD
-        ## label values: VI, PI, QL, SARSA
-=======
         ## label values: VI, PI, QL, SARSA, DQN
->>>>>>> 6cc145769310123c2e742df85c33ab828ca52d9c
         label = "VI"
         ## VALUE ITERATION
         match label:
@@ -113,7 +112,7 @@ def main():
                 label = "DQN"
 
         save_result(policy, V, label, DIR_NAME)
-    else:
+    elif False:
         label = "VI"
         V, policy = read_result(label, DIR_NAME)
 
@@ -130,23 +129,32 @@ def main():
         print("Path score: ", evaluator.evalPolicy(path))
         coordToPolicy(a.indexToCoord, policy)
 
-    if False: #example on how to do the functional approximation, verified and working
-        environment=Environement("dataset_1")
+    if False: #functional approximation example
+        environment=Environement(DIR_NAME)
         environment.encode(environment.dataset.goal, one_hot_encoding=True) #initialization
         environment.set_model()
         environment.train()
-        policy=environment.generate_policy(seperate=True) #if not true 
-        print(policy) #a coord:action policy as we discussed, ready to be printed
+        policy, utility=environment.generate_policy_utility()
+        policy_ind=coordToPolicy(a.indexToCoord, policy)
+        utility_ind=coordToPolicy(a.indexToCoord, utility) #should work
+
+        ### Plotting the utility of the functional approximation policy and the path ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy_ind, granularity=scale) #a line from start to goal
+        mapUtility(map, value_policy=utility_ind,index_to_coords=a.indexToCoord, size=100) #size here is the scaling of the scatter points
+        #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        plt.show()
 
     if True:
-        ### VISUALIZE DATASET ###
-        #plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
-        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
+        ### VISUALIZE DATASET - not that great for visualizing the entire region when 0.2 in scale ###
+        plot_dataset_on_map(dataset, Attribute="danger", Ranges=5, size=1, Legend=False) 
+        plot_dataset_on_map(dataset, Attribute="density", Ranges=5, size=1, Legend=True) #- working as intended 
 
 
         ### VISUALIZE POLICY ###
         dataset_solved=read_dataset("functional_demo", "functional_approximation_solved_demo")
-        plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3)
+        plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3, size=10) 
 
         #the animation we discussed
     

@@ -5,13 +5,14 @@ from dataset import read_dataset
 import random
 from buildRiskTable import MDP
 import tqdm
-from buildRiskTable import riskCalcNeighborsGoal
+from buildRiskTable import riskCalcNeighborsGoal #to be updated with density
 
 #POSSIBLE WORK BUT MOST LIKELY NO TIME:
 #TODO - extend the not one-hot-encoding, test so that it works, for example by adding the reward of states more steps ahead, using CNN to measure the form of danger in the area
 #TODO - make it possible to use the not one-hot-encoding for solving globally. This requires generating the state, next state for that part on demand!
 #TODO - vary stuff in the algoritm, can it be made even better?
 #TODO - clear the buffer a bit?
+#TODO - allways return 
 
 class Environement:
     "class used for doing the deep RL, what action to take, the reward function calculation and so on. Fully based on the Chat-GPT solution but adopted to this case"
@@ -145,7 +146,7 @@ class Environement:
             self.state_info_size=len(info_state)
             return np.array(info_state)
         
-        else: #requires sampling the same space as the function approximation is tested on for this to work
+        else: #requires sampling the same space as the function approximation is tested on for this to work! hard
             info_state=[]
             for state_key in self.dataset.states.keys():
                 if state==state_key:
@@ -182,37 +183,36 @@ class Environement:
                 # Train Q-network - on everything we have seen
                 self._train_q_network()
 
-    def train(self, episodes_to_run:int=10):
+    def train(self, episodes_to_run:int=100):
         "fits the model by some episodes"
         for _ in tqdm.tqdm(range(episodes_to_run), desc="training the model by running some episodes"):
             self.run_episode()
 
-    def generate_policy(self, seperate=False):
-        "to be done after training the training, returns a cord:action dictionary if seperate, otherwise add action as an attribute to the dataset"
-        if seperate:
-            policy={}
-            for state in tqdm.tqdm(self.dataset.states.keys(), desc="calculating policy"):
-                state_encoded=self.encode(state)
-                q_values = self.model.predict(state_encoded[np.newaxis], verbose=0) #if not the random action take the action which is greedy according to the current state of the model
-                action = np.argmax(q_values[0])
-                policy[state]=action
-            return policy
-        else:
-            states=self.dataset.states
-            for state in tqdm.tqdm(self.dataset.states.keys(), desc="calculating policy"):
-                state_encoded=self.encode(state)
-                q_values = self.model.predict(state_encoded[np.newaxis], verbose=0) #if not the random action take the action which is greedy according to the current state of the model
-                action = np.argmax(q_values[0])
-                states[state]['action']=int(action)
-            self.dataset.states=states
+    def generate_policy_utility(self):
+        "to be done after training, returns a cord:action dictionary and a utility dictionary coord:value as well as add those attributes to the dictionary"
+
+        policy={}
+        utility={}
+        states=self.states
+        for state in tqdm.tqdm(self.dataset.states.keys(), desc="calculating policy"):
+            state_encoded=self.encode(state)
+            q_values = self.model.predict(state_encoded[np.newaxis], verbose=0) #if not the random action take the action which is greedy according to the current state of the model
+            action = np.argmax(q_values[0])
+            util=np.max(q_values[0])
+            utility[state]=util
+            policy[state]=action
+            states[state]['action']=int(action)
+            states[state]['utility']=float(util)
+        self.dataset.states=states
+        return policy, utility
 
 def main():
     environment=Environement("dataset_1")
     environment.encode(environment.dataset.goal, one_hot_encoding=True) #initialization
     environment.set_model()
-    environment.train()
-    policy=environment.generate_policy(seperate=True)
-    print(policy)
+    environment.train(100)
+    policy, utility=environment.generate_policy_utility()
+    print(policy) #
 
 if __name__=='__main__':
     main()
