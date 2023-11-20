@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import random
 import math
 import numpy
+import matplotlib.pyplot as plt
+import tqdm
 
 def expo_distribution(range: int):
     x = random.expovariate(1)
@@ -54,6 +56,8 @@ class Evaluator():
         self.df = pd.read_csv("pirate_attacks.csv")
         self.regenerate()
 
+    # def rawScore(self)
+
     def generateAttacks(self):
         for _ in range(self.epochs):
             fDay = datetime.strptime(self.df.iloc[0]["date"], '%Y-%m-%d')
@@ -67,6 +71,19 @@ class Evaluator():
             a = self.df.loc[mask]
             for _, row in a.iterrows():
                 self.attacks.append((row['longitude'], row['latitude'], row['attack_type']))
+    
+    def generateAllAttacks(self):
+        fDay = datetime.strptime(self.df.iloc[0]["date"], '%Y-%m-%d')
+        lDay = datetime.strptime(self.df.iloc[-1]["date"], '%Y-%m-%d')
+        r = (lDay - fDay).days
+        # delta = timedelta(days=expo_distribution(r))
+        self.dates.append((fDay, lDay))
+        self.attacks = []
+        for d in self.dates:
+            mask = (self.df['date'] > str(d[0])) & (self.df['date'] <= str(d[1]))
+            a = self.df.loc[mask]
+            for _, row in a.iterrows():
+                self.attacks.append((row['longitude'], row['latitude'], row['attack_type']))
 
     def generatePenalty(self):
         max_penalty = -100
@@ -74,7 +91,7 @@ class Evaluator():
         penalties = {}
         a = numpy.array(range(0, int(5 / self.scale) + 1)) * self.scale * (max_penalty / 5)
         penaltyArr = a[::-1]
-        for attack in self.attacks: #TODO: ask team about how to deal with scale .5 (do we round to .5 or use .5 as distance between points)
+        for attack in tqdm.tqdm(self.attacks, desc="Generate penalty"): 
             miniPenalties = {}
             attackLonLat = (self.scale * round(attack[0]/self.scale), self.scale * round(attack[1]/self.scale))
             for x in range(0, int(gradient_radius / self.scale) + 1):
@@ -110,16 +127,37 @@ class Evaluator():
                             penalties[(lon, lat)] += penaltyArr[x + y]
         self.penalties = penalties
     def regenerate(self):
-        self.generateAttacks()
+        self.generateAllAttacks()
         self.generatePenalty()
 
-    def evalPolicy(self, pathDict: dict):
+    def evalPolicy(self, pathDict: dict) -> int:
         score = 0
         path = pathDict["path"]
         for i in range(len(path)):
-            if i in self.penalties:
-                score += self.penalties[i]
+            if path[i] in self.penalties.keys():
+                score += self.penalties[path[i]]
+        f = open(f"Evaluations\\{datetime.now().strftime('%d-%m-%Y_%H_%M_%S')}.txt", "w")
+        f.write("_____Path Evaluation_____\n")
+        f.write(f"Params: Cargo Cost: {self.cargo_cost} | Cost per Move: {self.cost_per_move}\n")
+        f.write(f"Distance: {pathDict['distance']} | Distance Cost: {pathDict['distance'] * self.cost_per_move}\n")
+        f.write(f"Piracy Penalty: {score} | Money Adjusted Score: {score * (self.cargo_cost / 100000)}\n")
+        f.write(f"Total penalty: ${score * (self.cargo_cost / 100000) - pathDict['distance'] * self.cost_per_move} \n")
+        return score * (self.cargo_cost / 100000) + pathDict['distance'] * self.cost_per_move
+
         return score + pathDict["distance"]
+    
+    def largeAverage(self, iterations, pathDict: dict):
+        total = 0
+        totalOverTime = []
+        for i in tqdm.tqdm(range(iterations), desc="Evaluating Path"):
+            self.regenerate()
+            total += self.evalPolicy(pathDict)
+            totalOverTime.append(total / (i + 1))
+        plt.plot(range(1, iterations + 1), totalOverTime)
+        plt.title(f'Average Penalty over {iterations} Iterations')
+        plt.xlabel('Iterations')
+        plt.ylabel('Average Penalty')
+        plt.show()
         
 
 def main():

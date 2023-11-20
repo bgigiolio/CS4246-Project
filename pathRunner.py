@@ -1,7 +1,7 @@
 
 actions = {0: "right", 1: "up", 2: "left", 3: "down"}
 def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float], coordToIndex: dict, scale: float) -> dict:
-    curr = start
+    curr = (round(start[0], 4), round(start[1], 4))
     distance = 0
     path = []
     pathState = []
@@ -24,13 +24,13 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             return{"path": path, "pathState": pathState, "distance": distance}
         history.append(currState)
         if policy[currState] == 0:
-            curr = (curr[0]+ scale, curr[1])
+            curr = (round(curr[0]+ scale, 4), curr[1])
         if policy[currState] == 1:
-            curr = (curr[0], curr[1] + scale)
+            curr = (curr[0], round(curr[1] + scale), 4)
         if policy[currState] == 2:
-            curr = (curr[0] - scale, curr[1])
+            curr = (round(curr[0] - scale, 4), curr[1])
         if policy[currState] == 3:
-            curr = (curr[0], curr[1] - scale)
+            curr = (curr[0], round(curr[1] - scale), 4)
         distance += scale
     return{"path": path, "pathState": pathState, "distance": distance}
 

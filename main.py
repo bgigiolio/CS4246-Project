@@ -19,19 +19,19 @@ def main():
     # goal = (104.5, 1.5)
     # start = (146.5, -9.5)
 
-    #the case study in the presentation
-    #latitude = (-12.4, 31.4)
-    #longitude = (88.4, 153)
-    #scale = .2
-    #goal = (104.8, 1.4) #Singapore
-    #start = (146.8, -10.0) #New Guinea
+    # the case study in the presentation
+    latitude = (-12.4, 31.4)
+    longitude = (88.4, 153)
+    scale = .2
+    goal = (104.8, 1.4) #Singapore
+    start = (146.8, -10.0) #New Guinea
     
-    #a smaller scale problem Sulawei to Singapore
-    latitude=(-8,10)
-    longitude=(100,130)
-    scale = .5
-    goal = (105, 1.4) #approximatley Singapore
-    start=(1.6, 124.5) #Manado, an interesting starting place because Borneo is in the way so you can take two ways around 
+    # #a smaller scale problem Sulawei to Singapore
+    # latitude=(-8,10)
+    # longitude=(100,130)
+    # scale = .5
+    # goal = (105, 1.4) #approximatley Singapore
+    # start=(1.6, 124.5) #Manado, an interesting starting place because Borneo is in the way so you can take two ways around 
 
         # ### DEMO ###
     # scale = .5
@@ -42,16 +42,16 @@ def main():
 
     DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}" #everything with density added from now on
 
-    if False:
-        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
-        dataset.generate_states(distance=scale) #needs to be done first
-        dataset.load_pirate_data(spread_of_danger=1)
-        dataset.set_start_goal_generate_distance(start=start, goal=goal)
+    if True:
+        # dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        # dataset.generate_states(distance=scale) #needs to be done first
+        # dataset.load_pirate_data(spread_of_danger=1)
+        # dataset.set_start_goal_generate_distance(start=start, goal=goal)
 
-        #dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
-        dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST
+        dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
+        # dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST
         #print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        dataset.save(DIR_NAME)
+        # dataset.save(DIR_NAME)
     else:
         dataset=read_dataset(DIR_NAME)
 
@@ -89,7 +89,7 @@ def main():
         print(P, R)
     else:
         P, R = read_mdp_params(DIR_NAME)
-        print(P, R)
+        # print(P, R)
     
     # return
 
@@ -128,13 +128,14 @@ def main():
 
     # return
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
         coordToPolicy(a.indexToCoord, policy)
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
-        evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
-        print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.indexToCoord, policy)
+        evaluator = Evaluator(scale, epochs=1, epoch_duration=10223)
+        print(f"Path Score: {evaluator.evalPolicy(path)}")
+        # evaluator.largeAverage(100, path)
+        # coordToPolicy(a.indexToCoord, policy)
 
     if False: #functional approximation example
         environment=Environement(DIR_NAME)
