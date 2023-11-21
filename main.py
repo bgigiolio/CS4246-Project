@@ -103,7 +103,7 @@ def main():
 
         save_result(policy, V, label, DIR_NAME)
     else:
-        label = "VI"
+        label = "QL"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
@@ -139,7 +139,7 @@ def main():
 
         #the animation we discussed
     
-    if False:
+    if True:
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
@@ -158,7 +158,7 @@ def main():
         mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
         plt.show()
 
-    if False:
+    if True:
         ### Display line on danger map###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
@@ -166,11 +166,11 @@ def main():
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
         plt.show()
 
-    if False:
+    if True:
         ### Display utility and line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
-        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=1)
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
         plt.show()
 
