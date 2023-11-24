@@ -1,5 +1,0 @@
-_____Path Evaluation_____
-Params: Cargo Cost: 200000000 | Cost per Move: 2000
-Distance: 16.199999999999974 | Distance Cost: 32399.99999999995
-Piracy Penalty: -6648.0 | Money Adjusted Score: -13296000.0
-Total penalty: -13328400.0 

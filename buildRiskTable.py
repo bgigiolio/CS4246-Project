@@ -10,10 +10,13 @@ import copy
 MAX_DANGER = 400
 
 
-def normalize(value: float) -> float:
+def normalize(value: float, density: bool = False) -> float:
     if value == 0:
         return value
-    return round(MAX_DANGER / (1 + math.exp((.01 * -1 * value) + 5)), 4)
+    if not density:
+        return round(MAX_DANGER / (1 + math.exp((.01 * -1 * value) + 5)), 4)
+    else:
+        return round(MAX_DANGER / (1 + math.exp((-1 * value) + 1)), 4)
 
 
 
@@ -28,7 +31,10 @@ def riskCalcNeighbors(lon: float, lat: float, data: Dataset):
     Generates riskMap using dataset's 'danger' value
     """
     if (round(lon, 4), round(lat, 4)) in data.states:
-        return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1))
+        if "density" in data.states[(round(lon, 4), round(lat, 4))].keys() and data.states[(round(lon, 4), round(lat, 4))]["density"] > 0:
+            return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"] / data.states[(round(lon, 4), round(lat, 4))]["density"], True) * -1), 4) 
+        else:
+            return round((normalize(data.states[(round(lon, 4), round(lat, 4))]["danger"]) * -1), 4)
     else:
         return "-"
     
