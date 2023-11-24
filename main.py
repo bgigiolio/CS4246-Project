@@ -186,7 +186,7 @@ def main():
         mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
         plt.show()
 
-    if True:
+    if False:
         ### Display line on danger map###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
@@ -194,7 +194,7 @@ def main():
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
         plt.show()
 
-    if True:
+    if False:
         ### Display utility and line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
