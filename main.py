@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
-from visualize_dataset import plot_dataset_on_map
+from visualize_dataset import plot_dataset_on_map, apply_dataset_on_map
 from buildRiskTable import MDP
-from lines import plotActions, mapUtility
+from lines import plotActions, mapUtility, mapDanger, maplgDanger
 from mdp import *
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -121,6 +121,7 @@ def main():
         save_result(policy, V, label, DIR_NAME)
     else:
         label = "QL"
+        label = "QL"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
@@ -170,15 +171,36 @@ def main():
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
+        map.drawmapboundary(fill_color='aqua')
+        map.fillcontinents(color='lightgreen')
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
-        #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        # map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        # map.scatter(goal[0] - 0.1, goal[1] + 0.7, marker=11, s=100, color="r")
+        # plt.annotate("Singapore", (goal[0] - 2.6, goal[1] + 1))
         plt.show()
 
     if False:
         ### Display utility ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
-        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=100)
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
         plt.show()
+
+    if True:
+        ### Display line on danger map###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapDanger(map, dataset=dataset, size=9)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
+    if True:
+        ### Display utility and line ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=1)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
 
 main()
