@@ -11,6 +11,8 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5, size=2, l
     "supply a state attributes which is a number such as, density danger or n_attacks, range 5 means 5 intervals as well as states with 0, regions according to (a,b].\
         Marks start, goal as >, < if defined. Use no legend if want to show the legend in the report in another way"
     
+    plt.figure() #new figure
+
     plt.rc('legend',fontsize=legend_size) # using a size in points
 
     attribute_state_dict={}

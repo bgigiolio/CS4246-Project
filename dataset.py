@@ -9,14 +9,6 @@ import os
 import rasterio
 from visualize_dataset import plot_dataset_on_map
 
-# not important
-#TODO - fix the rounding at the edge of the world (it rounds down relative to the ) (but can also just do dataset.max_lat, so no real issue even though a bit odd)
-#TODO - diagonal movement for the boats?
-#TODO - information about nearby countries in order to use for Deep learning solution
-
-#NOT:
-# - normalise density and reward, can easily be done by looping over the keys if that is needed when making the reward function
-
 ### SUPPLEMENTARY FUNCTIONS ###
 
 def get_index(input:float, lon_input:bool):
@@ -65,10 +57,6 @@ def local_average(dataset, row, colon, raster_array, window_size=200, method:str
         
         lons_m, lats_m=m(np.array(lons), np.array(lats))
 
-        #A potential speed up could be using Monte Carlo sampling...
-        #ro, co=np.shape(raster_array[row_min:row_max, col_min:col_max])
-        #total=ro*co
-        
         sea_points=0
         for lon_m in lons_m:
             for lat_m in lats_m:
@@ -326,12 +314,11 @@ def main():
         dataset.set_start_goal_generate_distance(start=(90, 0), goal=(150, 20))
         dataset.add_trafic_density(method="local_averege") 
         print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        #plot_dataset_on_map(dataset, Attribute="density", Ranges=5)
+        plot_dataset_on_map(dataset, Attribute="density", Ranges=5)
         #dataset.save("dataset_demo")
     #dataset=read_dataset("dataset_demo")
     #print(dataset) 
-
-    plot_dataset_on_map(dataset, Attribute="density", Ranges=5) 
+    #plot_dataset_on_map(dataset, Attribute="density", Ranges=5) 
 
 if __name__=='__main__':
     main()
