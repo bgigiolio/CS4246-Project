@@ -1,12 +1,12 @@
 from dataset import Dataset, read_dataset
-from visualize_dataset import plot_dataset_on_map, apply_dataset_on_map
+from visualize_dataset import plot_dataset_on_map
 from buildRiskTable import MDP
 from lines import plotActions, mapUtility, mapDanger, maplgDanger
 from mdp import *
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from eval import Evaluator
-from functional_approximation_solving import Environement
+from functional_approximation_solving import Environement, draw_paths
 from pathRunner import runPath, coordToPolicy
 import numpy as np
 
@@ -35,15 +35,15 @@ def main():
         start=(1.6, 124.5) #Manado, an interesting starting place because Borneo is in the way so you can take two ways around 
 
         # ### DEMO ###
-    # scale = .5
-    # longitude = (90, 110)
-    # latitude = (-12, 10)
-    # start = (99.5, 4)
-    # goal = (96, -5)
+        # scale = .5
+        # longitude = (90, 110)
+        # latitude = (-12, 10)
+        # start = (99.5, 4)
+        # goal = (96, -5)
 
     DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}" #everything with density added from now on
 
-    if True:
+    if False:
         # dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
         # dataset.generate_states(distance=scale) #needs to be done first
         # dataset.load_pirate_data(spread_of_danger=1)
@@ -58,10 +58,6 @@ def main():
         plot_dataset_on_map(dataset, Attribute="density", Ranges=5, size=10, legend_size=15) #- working as intended 
 
 
-    #print(dataset.states[(100, -1)])
-
-    # return
-
     if True:
         ###CREATE RISK TABLE ###
 
@@ -75,8 +71,6 @@ def main():
 
         goal_state = a.coordToIndex[goal[0]][goal[1]]
         print(goal_state)
-    
-    # return
 
     if False: 
         #MDP pipeline
@@ -92,8 +86,6 @@ def main():
     else:
         P, R = read_mdp_params(DIR_NAME)
         # print(P, R)
-    
-    # return
 
     if False:
         ### SOLVE MDP using MDP toolbox ###
@@ -116,7 +108,7 @@ def main():
             case "SARSA":
                 V, policy = SARSA(P, R, terminal_state=goal_state, num_episodes=5000)
                 label = "SARSA"
-            case "DQN":
+            case "DQN": #not working
                 V, policy = DQN(P, R, terminal_state=goal_state)
                 label = "DQN"
 
@@ -157,17 +149,14 @@ def main():
         #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
         plt.show()
 
-    if True:
+    if True: ### VISUALIZATIONS ###
         ### VISUALIZE DATASET ###
         plot_dataset_on_map(dataset, Attribute="danger", Ranges=5)
         plot_dataset_on_map(dataset, Attribute="density", Ranges=5) #- working as intended 
 
-
         ### VISUALIZE POLICY ###
         dataset_solved=read_dataset("functional_demo", "functional_approximation_solved_demo")
         plot_dataset_on_map(dataset_solved, Attribute="action", Ranges=3, size=10) 
-
-        #the animation we discussed
     
     if True:
         ### Plot Line ###
@@ -203,6 +192,74 @@ def main():
         mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=1)
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
         plt.show()
+
+    ######### scenario used for the training of DQN ###############
+    latitude=(-8,10)
+    longitude=(100,130)
+    scale = .5
+    goal = (104.5, 0) #approximatley Singapore
+    #start=(108,-6) #Jakarta approximatley
+    start=(108,-1) #west coast of Borneo
+
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}" 
+
+    if False: #instead, check if it exists or not
+        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        dataset.generate_states(distance=scale) #needs to be done first
+        dataset.load_pirate_data(spread_of_danger=1)
+        dataset.set_start_goal_generate_distance(start=start, goal=goal)
+
+        #dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
+        dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST, density allways added from now on
+        #print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
+        dataset.save(DIR_NAME)
+    else:
+        dataset=read_dataset(DIR_NAME) 
+
+    if True: #functional approximation
+        environment=Environement(DIR_NAME,one_hot_encoding=False)
+        environment.encode(environment.dataset.goal) #initialization
+        environment.set_model()
+        
+        #having stochastic_start=True has manually been set to work for the Borneo - Singapore case, might produce an error otherwise
+        total_rewards, paths, dones, loses=environment.train(1000, 100, stochastic_start=False)
+        #environment._load_weights() ### in case run during the night and just want to show results
+        
+        policy, utility=environment.generate_policy_utility()
+        dataset.save(DIR_NAME, "JSON_solved") #this saves the FA solved dataset, want it to be done allways!
+
+        plot_dataset_on_map(environment.dataset, Attribute="action", Ranges=3, size=10, legend_size=15) 
+        plt.figure() #new figure, so not basemap stuff ruined 
+        plt.plot([i for i in range(len(dones))], dones, "or") #dones (boolean) is multiplied by a hundred to be viewable
+        plt.plot([i for i in range(len(total_rewards))], total_rewards, "-og")
+        plt.show()
+
+        plt.figure() 
+        plt.plot([i for i in range(len(loses))], loses, "-oy")
+        plt.show()
+
+        draw_paths(paths, environment)
+
+
+    ##### attempt to use a saved model to solve a widely different dataset ###########
+
+    latitude=(45,60)
+    longitude=(-60,0)
+    scale = 1
+    goal = (-4, 54) #England
+    start=(-52,49) #Canada
+
+    DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}"
+
+    if False:
+        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        dataset.generate_states(distance=scale) 
+        dataset.load_pirate_data(spread_of_danger=1)
+        dataset.set_start_goal_generate_distance(start=start, goal=goal)
+        dataset.add_trafic_density(method="local_averege")
+        dataset.save(DIR_NAME)
+    else:
+        dataset=read_dataset(DIR_NAME)
 
 
 main()

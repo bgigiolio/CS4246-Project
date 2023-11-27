@@ -77,7 +77,7 @@ class Environement:
             self.target_network.set_weights(self.model.get_weights())
     
 
-    def _choose_action(self, encoded_state, state, p_random):
+    def _choose_action(self, encoded_state, p_random):
         if np.random.rand() < p_random:
             action = np.random.randint(self.action_space_size) #take a random action from the action space size
         else:
@@ -124,11 +124,11 @@ class Environement:
         neighbours=self.dataset.states[state]["neighbours"]
         next_state=None
         reward=0
-        for (close_state, index) in neighbours: #verified and correct
+        for (close_state, index) in neighbours:
             if index==action:
                 next_state=close_state
         if not next_state:
-            next_state=state #took an action which lead us back to same state
+            next_state=state
             #reward-=1 #Penalty for hitting islands
 
         reward+=-self.dataset.states[state]["to_goal"]
@@ -168,7 +168,7 @@ class Environement:
                         info_state.append(self.dataset.states[state]["density"])
                         info_state.append(self.dataset.states[state]["to_goal"])
         
-        else: #requires sampling the same space
+        else: #requires generating for same space as trained on
             info_state=[]
             for state_key in self.dataset.states.keys():
                 if state==state_key:
@@ -204,7 +204,7 @@ class Environement:
                     break
 
                 # Choose action
-                action = self._choose_action(self.encode(state), state, p_random)
+                action = self._choose_action(self.encode(state), p_random)
 
                 # Take action
                 next_state, reward, done = self.take_action(action, state)

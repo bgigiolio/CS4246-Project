@@ -33,8 +33,8 @@ def local_average(dataset, row, colon, raster_array, window_size=200, method:str
     if method=="local_averege":
         return np.mean(raster_array[row_min:row_max, col_min:col_max]) #the averege locally, maybe not great because port of Shanghai effect
     elif method=="local_max":
-        return np.max(raster_array[row_min:row_max, col_min:col_max]) #then the coast becomes interesting again
-    else: #need to check what very dense local points is land -> about 40 000 times slower..., too inpractical?
+        return np.max(raster_array[row_min:row_max, col_min:col_max])
+    else: #need to check what very dense local points is land -> about 40 000 times slower...
         buffer=2
         m = Basemap(llcrnrlon=dataset.min_lon-buffer,
                 llcrnrlat=dataset.min_lat-buffer,

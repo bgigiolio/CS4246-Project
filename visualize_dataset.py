@@ -3,10 +3,6 @@ from mpl_toolkits.basemap import Basemap
 import numpy as np
 import tqdm
 
-# if these types of figures will actually be used in the final report: 
-#TODO: generate range so that equal amount of samples in each range
-#TODO: crop the pictures to a certain size with no blank space. Save only the legend with purely white background...
-
 def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5, size=2, legend_size=10, Legend=True):
     "supply a state attributes which is a number such as, density danger or n_attacks, range 5 means 5 intervals as well as states with 0, regions according to (a,b].\
         Marks start, goal as >, < if defined. Use no legend if want to show the legend in the report in another way"
@@ -60,7 +56,7 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5, size=2, l
             lats_0.append(attribute_state_dict[0][j][1])
         lons_lats_by_range={(0,0):[lons_0, lats_0]} #format (a,b]
     else:
-        lons_lats_by_range={} #format (a,b]
+        lons_lats_by_range={}
 
     for i in range(len(range_cuts)-1):
         #initialising every range
@@ -74,12 +70,12 @@ def plot_dataset_on_map(dataset, Attribute:str="danger", Ranges:int=5, size=2, l
     Color=['lime', 'teal', 'r', 'y', 'pink', 'c', 'm', 'k', ] #to make sure no blue on blue
     for (i,(a,b)) in enumerate(lons_lats_by_range.keys()):
         [lons, lats]=lons_lats_by_range[(a,b)]
-        lons, lats = m(np.array(lons), np.array(lats)) #convert to map cordinates! done!
+        lons, lats = m(np.array(lons), np.array(lats)) #convert to map cordinates
         if Attribute=="action":
             mapping={0:"right", 1:"up", 2:"left", 3:"down"}
             m.scatter(lons, lats, marker = 'o', s=size, zorder=5, label=f'{Attribute} is {mapping[b]}', color=Color[i]) 
         elif a==b:
-            m.scatter(lons, lats, marker = 'o', s=size, zorder=5, label=f'{Attribute} is {a}', color=Color[i]) #zorder makes the dots on top of the map
+            m.scatter(lons, lats, marker = 'o', s=size, zorder=5, label=f'{Attribute} is {a}', color=Color[i])
         else:
             m.scatter(lons, lats, marker = 'o', s=size, zorder=5, label=f'{a}<{Attribute}<={b}', color=Color[i]) #zorder makes the dots on top of the map
         
