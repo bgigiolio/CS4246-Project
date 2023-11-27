@@ -1,7 +1,7 @@
 from dataset import Dataset, read_dataset
-from visualize_dataset import plot_dataset_on_map
+from visualize_dataset import plot_dataset_on_map, apply_dataset_on_map
 from buildRiskTable import MDP
-from lines import plotActions, mapUtility
+from lines import plotActions, mapUtility, mapDanger, maplgDanger
 from mdp import *
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -19,12 +19,12 @@ def main():
     goal = (104.5, 1.5)
     start = (146.5, -9.5)
 
-    #the case study in the presentation
-    #latitude = (-12.4, 31.4)
-    #longitude = (88.4, 153)
-    #scale = .2
-    #goal = (104.8, 1.4) #Singapore
-    #start = (146.8, -10.0) #New Guinea
+    # the case study in the presentation
+    latitude = (-12.4, 31.4)
+    longitude = (88.4, 153)
+    scale = .2
+    goal = (104.8, 1.4) #Singapore
+    start = (146.8, -10.0) #New Guinea
     
     if True:
         #a smaller scale problem Sulawei to Singapore
@@ -43,15 +43,16 @@ def main():
 
     DIR_NAME = f"{longitude}_{latitude}_{scale}_{goal}" #everything with density added from now on
 
-    if False:
-        dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
-        dataset.generate_states(distance=scale) #needs to be done first
-        dataset.load_pirate_data(spread_of_danger=1)
-        dataset.set_start_goal_generate_distance(start=start, goal=goal)
+    if True:
+        # dataset=Dataset(longitude[0], longitude[1], latitude[0], latitude[1]) #here ranges are used!
+        # dataset.generate_states(distance=scale) #needs to be done first
+        # dataset.load_pirate_data(spread_of_danger=1)
+        # dataset.set_start_goal_generate_distance(start=start, goal=goal)
 
+        #dataset=read_dataset(f"{longitude}_{latitude}_{scale}_{goal}")
         dataset.add_trafic_density(method="local_averege") ###THIS IS EXTREMLY FAST
         #print(dataset) #this shows a random example state as well as all the parameters. Note that there is no indexing of the states at this part of the project. 
-        dataset.save(DIR_NAME)
+        # dataset.save(DIR_NAME)
     else:
         dataset=read_dataset(DIR_NAME)
         plot_dataset_on_map(dataset, Attribute="density", Ranges=5, size=10, legend_size=15) #- working as intended 
@@ -90,7 +91,7 @@ def main():
         print(P, R)
     else:
         P, R = read_mdp_params(DIR_NAME)
-        print(P, R)
+        # print(P, R)
     
     # return
 
@@ -122,6 +123,7 @@ def main():
         save_result(policy, V, label, DIR_NAME)
     else:
         label = "QL"
+        label = "QL"
         V, policy = read_result(label, DIR_NAME)
 
     #policy_adj = fix_policy(policy, start, goal, a.coordToIndex, a.indexToCoord, dataset.states)
@@ -129,13 +131,14 @@ def main():
 
     # return
 
-    if False:
+    if True:
         ### EVALUATE POLICY ###
         coordToPolicy(a.indexToCoord, policy)
         path = runPath(policy=policy, start=start, goal=goal, coordToIndex=a.coordToIndex, scale=scale)
-        evaluator = Evaluator(scale, epochs=5, epoch_duration=30)
-        print("Path score: ", evaluator.evalPolicy(path))
-        coordToPolicy(a.indexToCoord, policy)
+        evaluator = Evaluator(scale, epochs=1, epoch_duration=10223)
+        print(f"Path Score: {evaluator.evalPolicy(path)}")
+        # evaluator.largeAverage(100, path)
+        # coordToPolicy(a.indexToCoord, policy)
 
     if False: #functional approximation example
         environment=Environement(DIR_NAME)
@@ -170,15 +173,36 @@ def main():
         ### Plot Line ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=dataset.max_lon, urcrnrlat=dataset.max_lat) #instead of longitude[1], latitude[1], but it was not the issue
         map.drawcoastlines()
+        map.drawmapboundary(fill_color='aqua')
+        map.fillcontinents(color='lightgreen')
         plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
-        #map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        # map.plot([goal[0], start[0]], [goal[1], start[1]], color="g", latlon=True) #shortest path between start and stop
+        # map.scatter(goal[0] - 0.1, goal[1] + 0.7, marker=11, s=100, color="r")
+        # plt.annotate("Singapore", (goal[0] - 2.6, goal[1] + 1))
         plt.show()
 
     if False:
         ### Display utility ###
         map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
         map.drawcoastlines()
-        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=100)
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=9)
         plt.show()
+
+    if False:
+        ### Display line on danger map###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapDanger(map, dataset=dataset, size=9)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
+    if False:
+        ### Display utility and line ###
+        map = Basemap(llcrnrlon=longitude[0], llcrnrlat=latitude[0], urcrnrlon=longitude[1], urcrnrlat=latitude[1])
+        map.drawcoastlines()
+        mapUtility(map, value_policy=V,index_to_coords=a.indexToCoord, size=1)
+        plotActions(map, start=start, end=goal, coords=a.indexToCoord, policyFunction=policy, granularity=scale)
+        plt.show()
+
 
 main()

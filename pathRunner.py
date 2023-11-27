@@ -1,15 +1,19 @@
-
+import random
 actions = {0: "right", 1: "up", 2: "left", 3: "down"}
 def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float], coordToIndex: dict, scale: float) -> dict:
-    curr = start
+    curr = (round(start[0], 4), round(start[1], 4))
     distance = 0
     path = []
     pathState = []
     history = []
     while curr != goal:
-        currState = coordToIndex[curr[0]][curr[1]]
+        try:
+            currState = coordToIndex[curr[0]][curr[1]]
+        except:
+            currState = history.pop()
         pathState.append(currState)
         path.append(curr)
+        choice = policy[currState]
         if currState in history:
             # print("Coords:")
             # print(path)
@@ -21,16 +25,26 @@ def runPath(policy: list, start: tuple[float, float], goal: tuple[float, float],
             #     print(f"{path[c]}: {actions[policy[state]]}")
             #     c += 1
             # raise Exception("Path caught in loop!")
-            return{"path": path, "pathState": pathState, "distance": distance}
+            c = random.randint(0, 1)
+            if choice == 0 or choice == 2:
+                if c == 0 and round((curr[1] + scale), 4) in coordToIndex[curr[0]].keys():
+                    choice = 1
+                else:
+                    choice = 3
+            else:
+                if c == 0 and curr[1] in coordToIndex[round(curr[0]+ scale, 4)].keys():
+                    choice = 0
+                else:
+                    choice = 2
         history.append(currState)
-        if policy[currState] == 0:
-            curr = (curr[0]+ scale, curr[1])
-        if policy[currState] == 1:
-            curr = (curr[0], curr[1] + scale)
-        if policy[currState] == 2:
-            curr = (curr[0] - scale, curr[1])
-        if policy[currState] == 3:
-            curr = (curr[0], curr[1] - scale)
+        if choice == 0:
+            curr = (round(curr[0]+ scale, 4), curr[1])
+        if choice == 1:
+            curr = (curr[0], round((curr[1] + scale), 4))
+        if choice == 2:
+            curr = (round(curr[0] - scale, 4), curr[1])
+        if choice == 3:
+            curr = (curr[0], round((curr[1] - scale), 4))
         distance += scale
     return{"path": path, "pathState": pathState, "distance": distance}
 
